@@ -1,3 +1,3 @@
 fn main() {
-    println!("Hello, world!");
+    crab_api::run_server();
 }
