@@ -19,7 +19,7 @@ pub fn run_server(){
 
 
         let items = vec!["About Niggers", "Why Poop Niggers are Alive", "White Niggers Really do exist"];
-        let li_html: String = items.iter().map(|item| format!("<li>{}</li>", item)).collect();
+        let li_html: String = items.iter().map(|item| format!("<li><a href=\"https://www.akc.org/dog-breeds/german-shepherd-dog/\">{}</a></li>", item)).collect();
 
 
         
