@@ -4,6 +4,54 @@ use std::io::{Read,Write};
 pub mod datatypes;
 use crate::datatypes::PostCard;
 
+pub fn render_home_page(home_loc: &str, post_card_loc: &str, items: Vec<PostCard>) -> String{
+    println!("Rendering home page, with {} posts", items.len());
+
+    let mut final_post_html: String = "".to_string();
+
+    for i in 0..items.len(){
+        let mut post_html = std::fs::read_to_string(post_card_loc).unwrap();
+
+        post_html = post_html.replace("{{POST_DATE}}", &items[i].date);
+        post_html = post_html.replace("{{POST_TITLE}}", &items[i].title);
+        post_html = post_html.replace("{{POST_DESCRIPTION}}", &items[i].description);
+        post_html = post_html.replace("{{POST_IMAGE_URL}}", "https://upload.wikimedia.org/wikipedia/commons/5/57/German_shepard_female.jpg");
+
+        final_post_html = final_post_html + &post_html;
+    }
+
+
+
+
+    let mut rb = std::fs::read_to_string(home_loc).unwrap();
+    rb = rb.replace("{{POSTS}}", &final_post_html);
+
+    rb
+}
+
+fn items() -> Vec<PostCard> {
+    vec![
+    PostCard::new(
+    "About Zeth".to_string(),
+    "Zeth is the most important resource, arguably, in the world".to_string(),
+    "19th August 2020".to_string(),
+    "a".to_string(),
+    ),
+    PostCard::new(
+    "About Poop".to_string(),
+    "Poop is the most important resource, arguably, in the world".to_string(),
+    "19th August 2020".to_string(),
+    "a".to_string(),
+    ),
+    PostCard::new(
+    "About Zeth's Poop".to_string(),
+    "Zeth's Poop is the most important resource, in the whole universe".to_string(),
+    "19th August 2020".to_string(),
+    "a".to_string(),
+    )
+    ]
+}
+
 pub fn run_server(){
     let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
 
@@ -21,29 +69,7 @@ pub fn run_server(){
         println!("Got incoming request: {}", request);
 
 
-        // let items = vec!["About Niggers", "Why Poop Niggers are Alive", "White Niggers Really do exist"];
-
-        let items = vec![
-            PostCard::new(
-            "About Poop".to_string(),
-            "Poop is the most important resource, arguably, in the world".to_string(),
-            "19th August 2020".to_string()
-            )
-        ];
-
-        let mut post_html = std::fs::read_to_string("static/post_card.html").unwrap();
-        post_html = post_html.replace("{{POST_DATE}}", &items[0].date);
-        post_html = post_html.replace("{{POST_TITLE}}", &items[0].title);
-        post_html = post_html.replace("{{POST_DESCRIPTION}}", &items[0].description);
-        post_html = post_html.replace("{{POST_IMAGE_URL}}", "https://upload.wikimedia.org/wikipedia/commons/5/57/German_shepard_female.jpg");
-        // let li_html: String = items.iter().map(|item| format!("<li><a href=\"https://www.akc.org/dog-breeds/german-shepherd-dog/\">{}</a></li>", item)).collect();
-
-
-
-
-        
-        let mut rb = std::fs::read_to_string("static/home.html").unwrap();
-        rb = rb.replace("{{POSTS}}", &post_html);
+        let rb = render_home_page("static/home.html", "static/post_card.html", items());
         
 
         let response = format!(
