@@ -1,4 +1,4 @@
-use std::net::TcpListener;
+use std::net::{TcpListener, TcpStream};
 use std::io::{Read,Write};
 
 pub mod datatypes;
@@ -29,6 +29,18 @@ pub fn render_home_page(home_loc: &str, post_card_loc: &str, items: Vec<PostCard
     rb
 }
 
+pub fn send_home(stream: &mut TcpStream){
+
+    let rb = render_home_page("static/home.html", "static/post_card.html", items());
+    let response = format!(
+        "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}",
+        rb.len(),
+        rb,
+    );
+
+    stream.write_all(response.as_bytes()).unwrap();
+}
+
 fn items() -> Vec<PostCard> {
     vec![
     PostCard::new(
@@ -52,6 +64,13 @@ fn items() -> Vec<PostCard> {
     ]
 }
 
+pub fn read_request(request_line: String, path: &mut String, method: &mut String){
+
+    let mut parts = request_line.split_whitespace();
+    *method = parts.next().unwrap_or("").to_string();
+    *path = parts.next().unwrap_or("").to_string();
+}
+
 pub fn run_server(){
     let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
 
@@ -66,19 +85,22 @@ pub fn run_server(){
         stream.read(&mut buffer).unwrap();
         let request = String::from_utf8_lossy(&buffer[..]);
 
-        println!("Got incoming request: {}", request);
+        println!("Got incoming request:\n{}", request);
 
 
-        let rb = render_home_page("static/home.html", "static/post_card.html", items());
-        
+        let mut method: String = "".to_string();
+        let mut path: String = "".to_string();
 
-        let response = format!(
-            "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}",
-            rb.len(),
-            rb,
-        );
+        read_request(request.to_string(), &mut path, &mut method);
 
-        stream.write_all(response.as_bytes()).unwrap();
+        println!("Got path: {}, and method: {}", path, method);
+
+        match (method.as_str(), path.as_str()){
+            ("GET", "/") => send_home(&mut stream),
+            _ => println!("Error"),
+        }
+
+
 
     }
 }
