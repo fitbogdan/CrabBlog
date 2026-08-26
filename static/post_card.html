@@ -1,13 +1,14 @@
-
-<div class="flex flex-col max-w-3xl w-full h36 px-10 mt-10">
-    Date: {{POST_DATE}} 
-    <div class="flex flex-row mt-2 justify-between border-white border-2 rounded items-center max-w-3xl w-full h-36 px-10">
-                <div class="flex flex-col">
-                    <p class="text-2xl font-bold">{{POST_TITLE}}</p>
-                    <p class="text-md opacity-75 pt-1">{{POST_DESCRIPTION}}</p>
-                </div>
-                <div class="bg-blue-600 rounded w-24 h-24 flex items-center justify-center">
-                    <img src="{{POST_IMAGE_URL}}" class="w-full h-full object-cover">
-                </div>
+<a href="test" class="block no-underline text-inherit max-w-3xl w-full px-10 mt-10">
+    <div class="flex flex-col">
+        Date: {{POST_DATE}}
+        <div class="flex flex-row mt-2 justify-between border-white border-2 rounded items-center w-full h-36 px-10">
+            <div class="flex flex-col min-w-0">
+                <p class="text-2xl font-bold truncate">{{POST_TITLE}}</p>
+                <p class="text-md opacity-75 pt-1 truncate">{{POST_DESCRIPTION}}</p>
+            </div>
+            <div class="bg-blue-600 rounded w-24 h-24 flex items-center justify-center shrink-0">
+                <img src="{{POST_IMAGE_URL}}" class="w-full h-full object-cover">
+            </div>
+        </div>
     </div>
-</div>
+</a>

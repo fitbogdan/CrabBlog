@@ -41,6 +41,17 @@ pub fn send_home(stream: &mut TcpStream){
     stream.write_all(response.as_bytes()).unwrap();
 }
 
+pub fn send_test(stream: &mut TcpStream){
+    let rb = "<h1>HELLO</h1>";
+    let response = format!(
+        "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}",
+        rb.len(),
+        rb,
+    );
+
+    stream.write_all(response.as_bytes()).unwrap();
+}
+
 fn items() -> Vec<PostCard> {
     vec![
     PostCard::new(
@@ -97,6 +108,7 @@ pub fn run_server(){
 
         match (method.as_str(), path.as_str()){
             ("GET", "/") => send_home(&mut stream),
+            ("GET", "/test") => send_test(&mut stream),
             _ => println!("Error"),
         }
 
