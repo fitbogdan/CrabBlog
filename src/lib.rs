@@ -41,6 +41,12 @@ pub fn send_home(stream: &mut TcpStream){
     stream.write_all(response.as_bytes()).unwrap();
 }
 
+
+
+pub fn get_post_id(){
+
+}
+
 pub fn send_test(stream: &mut TcpStream){
     let rb = "<h1>HELLO</h1>";
     let response = format!(
@@ -59,18 +65,21 @@ fn items() -> Vec<PostCard> {
     "Zeth is the most important resource, arguably, in the world".to_string(),
     "19th August 2020".to_string(),
     "a".to_string(),
+    1,
     ),
     PostCard::new(
     "About Poop".to_string(),
     "Poop is the most important resource, arguably, in the world".to_string(),
     "19th August 2020".to_string(),
     "a".to_string(),
+    2,
     ),
     PostCard::new(
     "About Zeth's Poop".to_string(),
     "Zeth's Poop is the most important resource, in the whole universe".to_string(),
     "19th August 2020".to_string(),
     "a".to_string(),
+    3,
     )
     ]
 }
