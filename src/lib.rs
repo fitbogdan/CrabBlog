@@ -79,6 +79,27 @@ pub fn send_test(stream: &mut TcpStream){
     stream.write_all(response.as_bytes()).unwrap();
 }
 
+pub fn send_css(stream: &mut TcpStream, file_path: String){
+    match std::fs::read_to_string(&file_path){
+        Ok(contents) => {
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: text/css\r\nContent-Length: {}\r\n\r\n{}",
+                contents.len(), contents
+            );
+
+            stream.write_all(response.as_bytes()).unwrap();
+        },
+        Err(_) => {
+            let rb = "<h1>404 Not found</h1>";
+            let response = format!(
+                "HTTP/1.1 404 NOT FOUND\r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}",
+                rb.len(), rb
+            );
+            stream.write_all(response.as_bytes()).unwrap();
+        }
+    }
+}
+
 fn items() -> Vec<PostCard> {
     vec![
     PostCard::new(
@@ -112,6 +133,8 @@ pub fn read_request(request_line: String, path: &mut String, method: &mut String
     *path = parts.next().unwrap_or("").to_string();
 }
 
+
+
 pub fn run_server(){
     let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
 
@@ -144,8 +167,11 @@ pub fn run_server(){
                 let id: u32 = id_str.parse().unwrap_or(0);
 
                 send_post(&mut stream, id);
-            }
+            },
+            ("GET", "/style.css") => send_css(&mut stream, "static/style.css".to_string()),
             _ => {
+
+                println!("Got 404: {}", path);
                 let rb = "<h1> 404 Not found </h1>";
                 let response = format!(
                     "HTTP/1.1 404 NOT FOUND \r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}",
