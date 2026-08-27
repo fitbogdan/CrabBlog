@@ -42,6 +42,9 @@ pub fn send_home(stream: &mut TcpStream){
     stream.write_all(response.as_bytes()).unwrap();
 }
 
+pub fn get_post_text(id: u32)-> String{
+    format!("Zeth's Post Text - {}", id)
+}
 
 pub fn send_post(stream: &mut TcpStream, id: u32){
     let items = items();
@@ -52,11 +55,19 @@ pub fn send_post(stream: &mut TcpStream, id: u32){
             post = Some(i);
             break;
         }
-    }  
+    } 
+
+    let mut rb = std::fs::read_to_string("static/post.html").unwrap();
 
 
-    let rb = match post {
-        Some(p) => format!("<h1>{}, ID = {}</h1> <p>{}</p>", p.title, p.id, p.description),
+
+    rb = match post {
+        Some(p) => {
+            rb.replace("{{POST_TITLE}}", &p.title)
+            .replace("{{POST_ID}}", &p.id.to_string())
+            .replace("{{POST_DATE}}", &p.date)
+            .replace("{{POST_TEXT}}", &get_post_text(id))
+        },
         None => "<h1> 404 Not found </h1>".to_string(),
     };
 
@@ -68,16 +79,6 @@ pub fn send_post(stream: &mut TcpStream, id: u32){
     stream.write_all(response.as_bytes()).unwrap();
 }
 
-pub fn send_test(stream: &mut TcpStream){
-    let rb = "<h1>HELLO</h1>";
-    let response = format!(
-        "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}",
-        rb.len(),
-        rb,
-    );
-
-    stream.write_all(response.as_bytes()).unwrap();
-}
 
 pub fn send_css(stream: &mut TcpStream, file_path: String){
     match std::fs::read_to_string(&file_path){
@@ -161,7 +162,6 @@ pub fn run_server(){
 
         match (method.as_str(), path.as_str()){
             ("GET", "/") => send_home(&mut stream),
-            ("GET", "/test") => send_test(&mut stream),
             ("GET", p) if p.starts_with("/post/")  => {
                 let id_str = p.strip_prefix("/post/").unwrap_or("");
                 let id: u32 = id_str.parse().unwrap_or(0);
