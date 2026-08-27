@@ -16,6 +16,7 @@ pub fn render_home_page(home_loc: &str, post_card_loc: &str, items: Vec<PostCard
         post_html = post_html.replace("{{POST_TITLE}}", &items[i].title);
         post_html = post_html.replace("{{POST_DESCRIPTION}}", &items[i].description);
         post_html = post_html.replace("{{POST_IMAGE_URL}}", "https://upload.wikimedia.org/wikipedia/commons/5/57/German_shepard_female.jpg");
+        post_html = post_html.replace("{{POST_ID}}", &format!("/post/{}", &items[i].id));
 
         final_post_html = final_post_html + &post_html;
     }
@@ -42,9 +43,29 @@ pub fn send_home(stream: &mut TcpStream){
 }
 
 
+pub fn send_post(stream: &mut TcpStream, id: u32){
+    let items = items();
 
-pub fn get_post_id(){
+    let mut post: Option<&PostCard> = None;
+    for i in items.iter(){
+        if i.id == id {
+            post = Some(i);
+            break;
+        }
+    }  
 
+
+    let rb = match post {
+        Some(p) => format!("<h1>{}, ID = {}</h1> <p>{}</p>", p.title, p.id, p.description),
+        None => "<h1> 404 Not found </h1>".to_string(),
+    };
+
+    let response = format!(
+        "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}",
+        rb.len(), rb
+    );
+
+    stream.write_all(response.as_bytes()).unwrap();
 }
 
 pub fn send_test(stream: &mut TcpStream){
@@ -118,7 +139,22 @@ pub fn run_server(){
         match (method.as_str(), path.as_str()){
             ("GET", "/") => send_home(&mut stream),
             ("GET", "/test") => send_test(&mut stream),
-            _ => println!("Error"),
+            ("GET", p) if p.starts_with("/post/")  => {
+                let id_str = p.strip_prefix("/post/").unwrap_or("");
+                let id: u32 = id_str.parse().unwrap_or(0);
+
+                send_post(&mut stream, id);
+            }
+            _ => {
+                let rb = "<h1> 404 Not found </h1>";
+                let response = format!(
+                    "HTTP/1.1 404 NOT FOUND \r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}",
+                    rb.len(),
+                    rb,
+                );
+
+                stream.write_all(response.as_bytes()).unwrap();
+            },
         }
 
 
