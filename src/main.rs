@@ -1,5 +1,6 @@
 use std::net::{TcpListener, TcpStream};
 use std::io::{Read,Write};
+use std::thread;
 pub mod post;
 pub mod datatypes;
 pub mod common;
@@ -81,56 +82,67 @@ pub fn read_request(request_line: String, path: &mut String, method: &mut String
     *path = parts.next().unwrap_or("").to_string();
 }
 
+pub fn handle_connection(mut stream: TcpStream){
+    let mut buffer = [0; 1024];
+    stream.read(&mut buffer).unwrap();
+    let request = String::from_utf8_lossy(&buffer[..]);
 
+    println!("Got incoming request:\n{}", request);
+
+
+    let mut method: String = "".to_string();
+    let mut path: String = "".to_string();
+
+    read_request(request.to_string(), &mut path, &mut method);
+
+    println!("Got path: {}, and method: {}", path, method);
+
+    match (method.as_str(), path.as_str()){
+        ("GET", "/") => send_home(&mut stream),
+        ("GET", p) if p.starts_with("/post/")  => {
+            let id_str = p.strip_prefix("/post/").unwrap_or("");
+            let id: u32 = id_str.parse().unwrap_or(0);
+
+            send_post(&mut stream, id);
+        },
+        ("GET", "/style.css") => send_css(&mut stream, "static/style.css".to_string()),
+        _ => {
+
+            println!("Got 404: {}", path);
+            let rb = "<h1> 404 Not found </h1>";
+            let response = format!(
+                "HTTP/1.1 404 NOT FOUND \r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}",
+                rb.len(),
+                rb,
+            );
+
+            stream.write_all(response.as_bytes()).unwrap();
+        },
+    }
+}
 
 pub fn run_server(){
     let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
 
     println!("Listening on http://127.0.0.1:8080");
 
+    let concurency = true;
+
     for stream in listener.incoming(){
-        let mut stream = stream.unwrap();
-        //unwrap -> If there is an error it crashes and prints the error
 
-
-        let mut buffer = [0; 1024];
-        stream.read(&mut buffer).unwrap();
-        let request = String::from_utf8_lossy(&buffer[..]);
-
-        println!("Got incoming request:\n{}", request);
-
-
-        let mut method: String = "".to_string();
-        let mut path: String = "".to_string();
-
-        read_request(request.to_string(), &mut path, &mut method);
-
-        println!("Got path: {}, and method: {}", path, method);
-
-        match (method.as_str(), path.as_str()){
-            ("GET", "/") => send_home(&mut stream),
-            ("GET", p) if p.starts_with("/post/")  => {
-                let id_str = p.strip_prefix("/post/").unwrap_or("");
-                let id: u32 = id_str.parse().unwrap_or(0);
-
-                send_post(&mut stream, id);
+        match stream {
+            Ok(stream) => {
+                if concurency == true {
+                    thread::spawn(move ||{
+                        handle_connection(stream);
+                    });
+                }
+                else{
+                    handle_connection(stream);
+                }
             },
-            ("GET", "/style.css") => send_css(&mut stream, "static/style.css".to_string()),
-            _ => {
-
-                println!("Got 404: {}", path);
-                let rb = "<h1> 404 Not found </h1>";
-                let response = format!(
-                    "HTTP/1.1 404 NOT FOUND \r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}",
-                    rb.len(),
-                    rb,
-                );
-
-                stream.write_all(response.as_bytes()).unwrap();
-            },
+            Err(e) => eprintln!("Connection failed! {}", e)
         }
-
-
 
     }
 }
