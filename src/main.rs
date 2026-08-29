@@ -126,13 +126,13 @@ pub fn run_server(){
 
     println!("Listening on http://127.0.0.1:8080");
 
-    let concurency = true;
+    let concurrency = true;
 
     for stream in listener.incoming(){
 
         match stream {
             Ok(stream) => {
-                if concurency == true {
+                if concurrency == true {
                     thread::spawn(move ||{
                         handle_connection(stream);
                     });
