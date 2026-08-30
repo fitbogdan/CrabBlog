@@ -13,7 +13,7 @@ fn main(){
 }
 
 pub fn render_home_page(home_loc: &str, post_card_loc: &str, items: Vec<PostCard>) -> String{
-    println!("Rendering home page, with {} posts", items.len());
+    // println!("Rendering home page, with {} posts", items.len());
 
     let mut final_post_html: String = "".to_string();
 
@@ -87,7 +87,7 @@ pub fn handle_connection(mut stream: TcpStream){
     stream.read(&mut buffer).unwrap();
     let request = String::from_utf8_lossy(&buffer[..]);
 
-    println!("Got incoming request:\n{}", request);
+    // println!("Got incoming request:\n{}", request);
 
 
     let mut method: String = "".to_string();
@@ -95,7 +95,7 @@ pub fn handle_connection(mut stream: TcpStream){
 
     read_request(request.to_string(), &mut path, &mut method);
 
-    println!("Got path: {}, and method: {}", path, method);
+    // println!("Got path: {}, and method: {}", path, method);
 
     match (method.as_str(), path.as_str()){
         ("GET", "/") => send_home(&mut stream),
@@ -108,7 +108,7 @@ pub fn handle_connection(mut stream: TcpStream){
         ("GET", "/style.css") => send_css(&mut stream, "static/style.css".to_string()),
         _ => {
 
-            println!("Got 404: {}", path);
+            // println!("Got 404: {}", path);
             let rb = "<h1> 404 Not found </h1>";
             let response = format!(
                 "HTTP/1.1 404 NOT FOUND \r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}",
@@ -124,7 +124,7 @@ pub fn handle_connection(mut stream: TcpStream){
 pub fn run_server(){
     let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
 
-    println!("Listening on http://127.0.0.1:8080");
+    // println!("Listening on http://127.0.0.1:8080");
 
     let concurrency = true;
 

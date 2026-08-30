@@ -5,37 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zeth's Blog</title>
     <link rel="stylesheet" href="/style.css">
-    <!-- <script src="https://cdn.tailwindcss.com"></script> -->
 </head>
-<body>
+<body class="font-sans bg-bg text-ink">
 
-    <div class="flex flex-col items-center px-7">
+    <div class="max-w-2xl mx-auto px-6">
 
-        <h1 class="text-4xl font-bold pt-10 text-center"> Bogdan's Simple Blog</h1>
-        
-        <h2 class="text-2xl pt-5 text-center"> My posts: (Most recent first) </h2>
+        <header class="text-center pt-16 pb-10">
+            <h1 class="font-display text-4xl text-accent [text-shadow:3px_3px_0_rgba(0,0,0,0.35)]">Bogdan's Simple Blog</h1>
+            <p class="text-muted mt-3">My posts &mdash; most recent first</p>
+        </header>
 
-
+        <div class="flex flex-col gap-4 pb-16">
             {{POSTS}}
-            <!-- <div class="flex flex-col max-w-3xl w-full h36 px-10 mt-10">
-                Date: 29th February 2029
-                <div class="flex flex-row mt-2 justify-between border-white border-2 rounded items-center max-w-3xl w-full h-36 px-10">
-                            <div class="flex flex-col">
-                                <p class="text-2xl font-bold">{{POST_TITLE}}</p>
-                                <p class="text-md opacity-75 pt-1">{{POST_DESCRIPTION}}</p>
-                            </div>
-                            <div class="bg-blue-600 rounded w-24 h-24 flex items-center justify-center"> pic </div>
-                </div>
-            </div> -->
-
-
-        
-
-
+        </div>
 
     </div>
-
-
 
 </body>
 </html>

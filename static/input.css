@@ -1,6 +1,78 @@
+@import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap');
 @import "tailwindcss";
 
-body {
-    background-color: rgb(33, 33, 33);
-    color: white;
+@theme {
+    --font-display: 'Pixelify Sans', 'Courier New', monospace;
+    --font-sans: 'Nunito', Verdana, sans-serif;
+
+    --color-bg: #1b1d2b;
+    --color-bg-deep: #12131c;
+    --color-panel: #262a40;
+    --color-outline: #444a6e;
+    --color-ink: #ece6d8;
+    --color-muted: #9aa0c4;
+    --color-accent: #f2a65a;
+    --color-accent-strong: #c97a34;
+    --color-green: #7bc47f;
+    --color-pink: #e8779b;
+
+    --pixel-clip: polygon(
+        0 8px, 8px 8px, 8px 0,
+        calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px,
+        100% calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) 100%,
+        8px 100%, 8px calc(100% - 8px), 0 calc(100% - 8px)
+    );
+    --pixel-clip-sm: polygon(
+        0 4px, 4px 4px, 4px 0,
+        calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px,
+        100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%,
+        4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px)
+    );
+}
+
+@layer base {
+    body {
+        background-color: var(--color-bg);
+        background-image:
+            radial-gradient(rgb(255 255 255 / 8%) 1px, transparent 1px),
+            radial-gradient(rgb(255 255 255 / 5%) 1px, transparent 1px);
+        background-size: 46px 46px, 74px 74px;
+        background-position: 0 0, 23px 33px;
+        background-attachment: fixed;
+    }
+
+    a {
+        color: var(--color-accent);
+        text-decoration: none;
+    }
+
+    a:hover {
+        color: var(--color-green);
+    }
+}
+
+@layer components {
+    .pixel-card {
+        @apply bg-panel border-2 border-outline;
+        clip-path: var(--pixel-clip);
+    }
+
+    .pixel-thumb {
+        @apply border-2 border-outline overflow-hidden bg-bg-deep;
+        clip-path: var(--pixel-clip-sm);
+    }
+
+    .pixel-badge {
+        @apply font-display text-xs px-2 py-1 bg-accent text-bg-deep;
+        clip-path: var(--pixel-clip-sm);
+    }
+
+    .pixel-btn {
+        @apply font-display text-sm px-3 py-1.5 bg-panel border-2 border-outline text-ink transition-colors;
+        clip-path: var(--pixel-clip-sm);
+    }
+
+    .pixel-btn:hover {
+        @apply border-accent text-accent;
+    }
 }

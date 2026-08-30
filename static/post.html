@@ -5,38 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Post</title>
     <link rel="stylesheet" href="/style.css">
-    <!-- <style>
-        body {
-            background-color: rgb(33, 33, 33);
-            color: white;
-        }
-    </style> -->
-    <!-- <script src="https://cdn.tailwindcss.com"></script> -->
 </head>
-<body>
+<body class="font-sans bg-bg text-ink">
 
-    <div class="flex flex-col items-center px-7">
+    <div class="max-w-2xl mx-auto px-6">
 
-        <h1 class="text-4xl font-bold pt-10 text-center"> {{POST_TITLE}}, ID = {{POST_ID}}</h1>
+        <div class="pt-10 pb-6">
+            <a href="/" class="pixel-btn inline-block">&larr; Back</a>
+        </div>
 
-        <div class="max-w-4xl w-full pt-10">
-            <p class="opacity-75"> {{POST_DATE}} </p>
+        <header class="pb-6">
+            <span class="pixel-badge inline-block mb-3">{{POST_DATE}} &middot; #{{POST_ID}}</span>
+            <h1 class="font-display text-3xl text-accent [text-shadow:2px_2px_0_rgba(0,0,0,0.35)]"> {{POST_TITLE}} </h1>
+        </header>
 
-            <p class="text-xl pt-5 leading-relaxed text-left"> {{POST_TEXT}} </p>
+        <div class="pixel-card p-6">
+            <p class="font-sans text-base leading-relaxed text-ink"> {{POST_TEXT}} </p>
 
-            <p class="text-xl pt-5 leading-relaxed text-left"> Today I started my day by taking a big fat shit, it was huge, but then right when I thought
+            <p class="font-sans text-base leading-relaxed text-ink mt-5"> Today I started my day by taking a big fat shit, it was huge, but then right when I thought
                 it couldn't get bigger, I went outside to feed zeth. I saw the largest poop in the world. This is why humans are inferior
             to dogs </p>
         </div>
 
-
-        
-
-
+        <div class="pb-16"></div>
 
     </div>
-
-
 
 </body>
 </html>
