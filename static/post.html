@@ -29,7 +29,7 @@
 
         <div class="pb-16"></div>
 
-        <h1 class="font-display text-3xl text-ink [text-shadow:2px_2px_0_rgba(0,0,0,0.35)]"> Around The Fire - 10 Replies </h1>
+        <h2 class="font-display text-3xl text-ink [text-shadow:2px_2px_0_rgba(0,0,0,0.35)]"> Around The Fire - 10 Replies </h2>
 
         <div class="pixel-card p-6">
 
@@ -118,10 +118,25 @@
         </div>
 
 
-        <form method="post" action="/post/{{POST_ID}}/reply" class="flex flex-col gap-2 mt-3 max-w-md">
-            <textarea name="body" class="font-sans text-sm text-ink bg-bg-deep border-2 border-outline p-2 resize-none" rows="2" placeholder="Write a reply..."></textarea>
-            <button type="submit" class="pixel-btn self-start">Post reply</button>
-        </form>
+        <div class="pixel-card p-6 my-5">
+
+            <h2 class="font-display text-2xl text-ink [text-shadow:2px_2px_0_rgba(0,0,0,0.35)]"> Add to the conversation </h2>
+
+            <form method="post" action="/post/{{POST_ID}}/reply" class="flex flex-col gap-2 mt-3">
+                <textarea name="body" class="font-sans text-sm text-ink bg-bg-deep border-2 border-outline p-2 resize-none" rows="2" placeholder="Write a reply..."></textarea>
+
+
+                <div class="flex justify-between items-center mt-2">
+                    <p class="font-base text-xs opacity-45 leading-relaxed text-ink"> Be kind, disagree freely </p>
+
+                    <button type="submit" class="pixel-btn self-start bg-accent text-bg-deep">post reply</button>
+                </div>
+
+
+            </form>
+
+
+        </div>
     </div>
 
 </body>
