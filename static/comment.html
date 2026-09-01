@@ -1,0 +1,19 @@
+
+<div class="flex items-center gap-3">
+    <div class="w-10 h-10 bg-amber-950 rounded flex items-center justify-center font-display text-ink border-2 border-outline"> Z </div>
+    <div class="flex flex-col">
+        <p class="font-display text-xl leading-relaxed text-ink"> Zeth </p>
+        <p class="font-base text-xs opacity-45 leading-relaxed text-ink"> 22 Aug, 19:40 - Here since 2022 </p>
+    </div>
+</div>
+
+<p class="font-sans text-base leading-relaxed text-ink"> I think I am awesome </p>
+<details class="mx-3 my-1">
+    <summary class="font-display underline text-lg text-ink hover:text-green-400 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+        reply
+    </summary>
+    <form method="post" action="/post/{{POST_ID}}/reply/comment-{{COMMENT_ID}}" class="flex flex-col gap-2 mt-3 max-w-md">
+        <textarea name="body" class="font-sans text-sm text-ink bg-bg-deep border-2 border-outline p-2 resize-none" rows="2" placeholder="Write a reply..."></textarea>
+        <button type="submit" class="pixel-btn self-start">Post reply</button>
+    </form>
+</details>

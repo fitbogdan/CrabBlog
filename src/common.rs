@@ -1,4 +1,5 @@
-use crate::datatypes::PostCard;
+use crate::datatypes::{PostCard,Comment};
+use chrono::{Utc,Duration};
 
 
 pub fn items() -> Vec<PostCard> {
@@ -25,4 +26,36 @@ pub fn items() -> Vec<PostCard> {
     3,
     )
     ]
+}
+
+pub fn comments() -> Vec<Comment>{
+    vec![
+        Comment::new(
+            1,
+            1,
+            1,
+            Utc::now(),
+            "Zethen Machen".to_string(),
+            None,
+        ),
+
+        Comment::new(
+            1,
+            1,
+            1,
+            Utc::now()+Duration::minutes(30),
+            "Zethen Machen 30 minuten Hunden Wursten".to_string(),
+            None,
+        ),
+    ]
+}
+
+pub fn get_username(id: u32) -> &'static str{
+    match id {
+        0 => "Bogdan",
+        1 => "Zeth",
+        2 => "Cat",
+        3 => "Cats are losers",
+        _ => "Weird Id",
+    }
 }
