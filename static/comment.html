@@ -1,14 +1,17 @@
 
+<div class="pixel-card p-6 my-5">
+
 <div class="flex items-center gap-3">
     <div class="w-10 h-10 bg-amber-950 rounded flex items-center justify-center font-display text-ink border-2 border-outline"> Z </div>
     <div class="flex flex-col">
-        <p class="font-display text-xl leading-relaxed text-ink"> Zeth </p>
-        <p class="font-base text-xs opacity-45 leading-relaxed text-ink"> 22 Aug, 19:40 - Here since 2022 </p>
+        <p class="font-display text-xl leading-relaxed text-ink"> {{USERNAME}} </p>
+        <p class="font-base text-xs opacity-45 leading-relaxed text-ink"> {{DATE_POSTED}} </p>
+        <!--  22 Aug, 19:40 - Here since 2022 -->
     </div>
 </div>
 
-<p class="font-sans text-base leading-relaxed text-ink"> I think I am awesome </p>
-<details class="mx-3 my-1">
+<p class="font-sans text-base leading-relaxed text-ink"> {{COMMENT}} </p>
+<details class="mx-3 mt-1 mb-3">
     <summary class="font-display underline text-lg text-ink hover:text-green-400 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
         reply
     </summary>
@@ -17,3 +20,18 @@
         <button type="submit" class="pixel-btn self-start">Post reply</button>
     </form>
 </details>
+
+
+<!-- Subcomments Structure -->
+<div class="flex gap-2">
+    <div class="w-1 bg-outline"></div>
+
+    <!-- Comments Under main Comment -->
+        <!-- {{SUB_COMMENTS}} -->
+    <!-- Comments Under Main Comment End -->
+
+
+</div>
+
+
+</div>

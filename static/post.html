@@ -31,99 +31,16 @@
 
         <h2 class="font-display text-3xl text-ink [text-shadow:2px_2px_0_rgba(0,0,0,0.35)]"> Around The Fire - 10 Replies </h2>
 
-        <div class="pixel-card p-6">
 
 
 
             <!-- Comment -->
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-amber-950 rounded flex items-center justify-center font-display text-ink border-2 border-outline"> Z </div>
-                <div class="flex flex-col">
-                    <p class="font-display text-xl leading-relaxed text-ink"> Zeth </p>
-                    <p class="font-base text-xs opacity-45 leading-relaxed text-ink"> 22 Aug, 19:40 - Here since 2022 </p>
-                </div>
-            </div>
-
-            <p class="font-sans text-base leading-relaxed text-ink"> I think I am awesome </p>
-            <details class="mx-3 my-1">
-                <summary class="font-display underline text-lg text-ink hover:text-green-400 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-                    reply
-                </summary>
-                <form method="post" action="/post/{{POST_ID}}/reply/comment-{{COMMENT_ID}}" class="flex flex-col gap-2 mt-3 max-w-md">
-                    <textarea name="body" class="font-sans text-sm text-ink bg-bg-deep border-2 border-outline p-2 resize-none" rows="2" placeholder="Write a reply..."></textarea>
-                    <button type="submit" class="pixel-btn self-start">Post reply</button>
-                </form>
-            </details>
+            {{COMMENTS}}
             <!-- Comment End -->
 
 
 
 
-            <!-- Subcomments Structure -->
-            <div class="flex gap-2">
-                <div class="w-1 bg-outline"></div>
-
-                <!-- Comments Under main Comment -->
-                <div class="flex flex-col">
-                    <div class="flex flex-col py-3">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 bg-amber-950 rounded flex items-center justify-center font-display text-ink border-2 border-outline text-sm"> Z </div>
-                            <div class="flex flex-col">
-                                <div class="flex justify-center items-center gap-3">
-                                    <p class="font-display text-lg leading-relaxed text-ink"> Zeth </p>
-                                    <p class="font-base text-xs opacity-45 leading-relaxed text-ink"> 22 Aug, 23:00 </p>
-                                </div>
-                            </div>
-                        </div>
-                        <p class="font-sans text-base leading-relaxed text-ink"> Fudge anyone who disagrees </p>
-                    </div>
-
-                    <div class="flex flex-col py-3">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 bg-blue-700 rounded flex items-center justify-center font-display text-ink border-2 border-outline text-sm"> C </div>
-                            <div class="flex flex-col">
-                                <div class="flex justify-center items-center gap-3">
-                                    <p class="font-display text-lg leading-relaxed text-ink"> Cat </p>
-                                    <p class="font-base text-xs opacity-45 leading-relaxed text-ink"> 23 Aug, 13:21 </p>
-                                </div>
-                            </div>
-                        </div>
-                        <p class="font-sans text-base leading-relaxed text-ink"> Fudge Zeth and fudge dogs </p>
-                    </div>
-
-
-                    <div class="flex flex-col py-3">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 bg-green-500 rounded flex items-center justify-center font-display text-ink border-2 border-outline text-sm"> C </div>
-                            <div class="flex flex-col">
-                                <div class="flex justify-center items-center gap-3">
-                                    <p class="font-display text-lg leading-relaxed text-ink"> Cats Are Losers </p>
-                                    <p class="font-base text-xs opacity-45 leading-relaxed text-ink"> 23 Aug, 14:46 </p>
-                                </div>
-                            </div>
-                        </div>
-                        <p class="font-sans text-base leading-relaxed text-ink"> Look at my username </p>
-                    </div>
-
-
-
-                    <div class="flex flex-col py-3">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 bg-green-900 rounded flex items-center justify-center font-display text-ink border-2 border-outline text-sm"> B </div>
-                            <div class="flex flex-col">
-                                <div class="flex justify-center items-center gap-3">
-                                    <p class="font-display text-lg leading-relaxed text-ink"> Bogdan </p> 
-                                    <span class="pixel-badge bg-green-500 text-xs inline-block"> Author </span>
-                                    <p class="font-base text-xs opacity-45 leading-relaxed text-ink"> 23 Aug, 15:56 </p>
-                                </div>
-                            </div>
-                        </div>
-                        <p class="font-sans text-base leading-relaxed text-ink"> Zeth IS THE COOLEST </p>
-                    </div>
-                </div>
-
-            </div>
-        </div>
 
 
         <div class="pixel-card p-6 my-5">
