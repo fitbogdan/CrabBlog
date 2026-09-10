@@ -59,9 +59,28 @@ pub fn comments() -> Vec<Comment>{
         ),
 
         Comment::new(
+            4,
+            1,
+            2,
+            Utc::now(),
+            "Personally I hate Zeth".to_string(),
+            Some(1),
+        ),
+
+        Comment::new(
+            2,
             1,
             1,
-            1,
+            Utc::now()+Duration::minutes(30),
+            "Zethen Machen 30 minuten Hunden Wursten".to_string(),
+            None,
+        ),
+
+
+        Comment::new(
+            3,
+            2,
+            2,
             Utc::now()+Duration::minutes(30),
             "Zethen Machen 30 minuten Hunden Wursten".to_string(),
             None,
