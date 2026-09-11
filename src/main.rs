@@ -4,6 +4,7 @@ use std::thread;
 pub mod post;
 pub mod datatypes;
 pub mod common;
+pub mod db_service;
 use crate::datatypes::{PostCard, Comment};
 use crate::post::send_post;
 use crate::common::{items,comments};

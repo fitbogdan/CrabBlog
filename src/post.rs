@@ -2,7 +2,6 @@ use crate::datatypes::{PostCard,Comment};
 use crate::common::{items,comments,send_response};
 use std::net::{TcpStream};
 use std::collections::{HashMap};
-use std::ptr::null;
 
 
 
@@ -30,9 +29,8 @@ pub fn render_comments(post_id: u32) -> String{
 
 
     for i in parents{
-        if i.post_id != post_id{
-            continue;
-        }
+
+
         let mut cur = 
             comment_template.replace("{{USERNAME}}", &format!("{} - Zeth", i.user_id))
             .replace("{{DATE_POSTED}}", &i.date.to_string())
@@ -44,9 +42,12 @@ pub fn render_comments(post_id: u32) -> String{
         if let Some(subs) = subcomments.get(&i.id){
             for s in subs{
 
-                let cur_subcomment = subcomment_template.replace("{{USER_ID}}", &s.user_id.to_string())
-                                                        .replace("{{DATE}}", &s.date.to_string())
-                                                        .replace("{{BODY}}", &s.body.to_string());
+                let cur_subcomment = 
+                    subcomment_template.replace("{{USER_ID}}", &s.user_id.to_string())
+                                       .replace("{{DATE}}", &s.date.to_string())
+                                       .replace("{{BODY}}", &s.body.to_string());
+
+
                 cur_subcomments.push_str(&cur_subcomment);
             }
 
