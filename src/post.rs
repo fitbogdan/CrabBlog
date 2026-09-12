@@ -1,12 +1,24 @@
+use rusqlite::Connection;
+
 use crate::datatypes::{PostCard,Comment};
 use crate::common::{items,comments,send_response};
+use crate::db_service::get_comment;
 use std::net::{TcpStream};
 use std::collections::{HashMap};
+use std::sync::{Arc, Mutex};
 
 
 
-pub fn render_comments(post_id: u32) -> String{
-    let comments = comments();
+pub fn render_comments(post_id: u32, db: Arc<Mutex<Connection>>) -> String{
+    let comments = {
+        let conn = db.lock().unwrap();
+        get_comment(&conn, post_id)
+    };
+
+    if comments.is_empty() {
+        return "".to_string();
+    }
+
 
     let comment_template = std::fs::read_to_string("static/comment.html").unwrap();
     let subcomment_template = std::fs::read_to_string("static/subcomment.html").unwrap();
@@ -71,7 +83,7 @@ pub fn get_post_text(id: u32)-> String{
 }
 
 
-pub fn send_post(stream: &mut TcpStream, id: u32){
+pub fn send_post(stream: &mut TcpStream, id: u32, db: Arc<Mutex<Connection>>){
     let items = items();
 
     let mut post: Option<&PostCard> = None;
@@ -89,7 +101,7 @@ pub fn send_post(stream: &mut TcpStream, id: u32){
         Some(p) => {
             
 
-            let comments = render_comments(p.id);
+            let comments = render_comments(p.id,db);
             
 
             rb.replace("{{POST_TITLE}}", &p.title)

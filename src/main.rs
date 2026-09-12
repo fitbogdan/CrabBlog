@@ -1,11 +1,16 @@
 use std::net::{TcpListener, TcpStream};
 use std::io::{Read,Write};
+use std::sync::{Arc, Mutex};
 use std::thread;
 pub mod post;
 pub mod datatypes;
 pub mod common;
 pub mod db_service;
+use chrono::{DateTime, Utc};
+use rusqlite::Connection;
+
 use crate::datatypes::{PostCard, Comment};
+use crate::db_service::send_comment;
 use crate::post::send_post;
 use crate::common::{items,comments};
 
@@ -100,7 +105,7 @@ pub fn send_404(stream: &mut TcpStream){
     stream.write_all(response.as_bytes()).unwrap();
 }
 
-pub fn handle_connection(mut stream: TcpStream){
+pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>){
     let mut buffer = [0; 1024];
     stream.read(&mut buffer).unwrap();
     let request = String::from_utf8_lossy(&buffer[..]);
@@ -120,19 +125,33 @@ pub fn handle_connection(mut stream: TcpStream){
         ("GET", []) => send_home(&mut stream),
         ("GET", ["post", id])  => {
             match id.parse::<u32>() {
-                Ok(post_id) => send_post(&mut stream, post_id),
+                Ok(post_id) => send_post(&mut stream, post_id, db),
                 Err(_) => send_404(&mut stream),
             }
         },
         ("GET", ["style.css"]) => send_css(&mut stream, "static/style.css".to_string()),
-        ("POST", ["post", id, "reply"]) => {
-            let rb = format!("Hello, your ID is: {} <br> This is your body: {}", id, body);
-            let response = format!(
-                "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}",
-                rb.len(),
-                rb,
-            );
 
+        ("POST", ["post", id, "reply"]) => {
+            // let rb = format!("Hello, your ID is: {} <br> This is your body: {}", id, body);
+            // let response = format!(
+            //     "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}",
+            //     rb.len(),
+            //     rb,
+            // );
+
+            // stream.write_all(response.as_bytes()).unwrap();
+            
+            let post_id = id.parse().unwrap();
+            let comment = Comment { id: 0, post_id: post_id, user_id: 0, body: body.to_string(), parent_id: None, date: Utc::now()};
+
+            {
+            let conn = db.lock().unwrap();
+            send_comment(&conn, &comment);
+            } //Scope conn so it releases the loc
+
+
+
+            let response = format!("HTTP/1.1 302 Found\r\nLocation: /post/{}\r\n\r\n", post_id);
             stream.write_all(response.as_bytes()).unwrap();
         },
         _ => {
@@ -147,18 +166,22 @@ pub fn run_server(){
     println!("Listening on http://127.0.0.1:8080");
 
     let concurrency = true;
+    let conn = db_service::create_db();
+    let db = Arc::new(Mutex::new(conn));
 
     for stream in listener.incoming(){
 
         match stream {
             Ok(stream) => {
                 if concurrency == true {
+                    let db = Arc::clone(&db);
+
                     thread::spawn(move ||{
-                        handle_connection(stream);
+                        handle_connection(stream,db);
                     });
                 }
                 else{
-                    handle_connection(stream);
+                    handle_connection(stream,Arc::clone(&db));
                 }
             },
             Err(e) => eprintln!("Connection failed! {}", e)

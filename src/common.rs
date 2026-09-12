@@ -2,7 +2,7 @@ use crate::datatypes::{PostCard,Comment};
 use chrono::{Utc,Duration};
 use std::net::{TcpStream};
 use std::io::{Write};
-
+use crate::db_service::{get_comment};
 pub fn send_response(stream: &mut TcpStream, status: u32, content_type: &str, body: &str){
 
 
@@ -68,6 +68,15 @@ pub fn comments() -> Vec<Comment>{
         ),
 
         Comment::new(
+            5,
+            1,
+            2,
+            Utc::now(),
+            "You big fat piece of shit how dare you say that about Zeth i hope you get hemmoroids".to_string(),
+            Some(1),
+        ),
+
+        Comment::new(
             2,
             1,
             1,
@@ -86,6 +95,8 @@ pub fn comments() -> Vec<Comment>{
             None,
         ),
     ]
+
+    
 }
 
 pub fn get_username(id: u32) -> &'static str{
