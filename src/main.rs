@@ -12,7 +12,7 @@ use rusqlite::Connection;
 use crate::datatypes::{PostCard, Comment};
 use crate::db_service::send_comment;
 use crate::post::send_post;
-use crate::common::{comments, items, send_response};
+use crate::common::{items, send_response};
 
 fn main(){
     run_server();
