@@ -147,7 +147,7 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>){
             {
             let conn = db.lock().unwrap();
             send_comment(&conn, &comment);
-            } //Scope conn so it releases the loc
+            } //Scope conn so it releases the lock
 
 
 
