@@ -2,7 +2,6 @@ use crate::datatypes::{PostCard,Comment};
 use chrono::{Utc,Duration};
 use std::net::{TcpStream};
 use std::io::{Write};
-use crate::db_service::{get_comment};
 pub fn send_response(stream: &mut TcpStream, status: u32, content_type: &str, body: &str){
 
 
@@ -20,6 +19,64 @@ pub fn send_response(stream: &mut TcpStream, status: u32, content_type: &str, bo
 
     stream.write_all(response.as_bytes()).unwrap();
 }
+
+pub fn decode(body: &str) -> String{
+
+    let bytes = body.as_bytes();
+    let mut result_bytes: Vec<u8> = Vec::new();
+    let mut i = 0;
+    while i < bytes.len(){
+
+        if bytes[i] == b'%'{
+            if i+2 < bytes.len() {
+
+                let hex = std::str::from_utf8(&bytes[i+1..i+3]).unwrap();
+
+                let byte = u8::from_str_radix(hex, 16).unwrap();
+
+                result_bytes.push(byte);
+
+                
+                i = i+3;
+            }
+            else{
+                i+=1;
+            }
+        }
+        else if bytes[i] == b'+' {
+            result_bytes.push(b' ');
+            i+=1;
+        }
+
+        else{
+            result_bytes.push(bytes[i]);
+            i+=1;
+        }
+    }
+
+    
+    String::from_utf8(result_bytes).unwrap()
+}
+
+pub fn decode_body(body: &str) -> String{
+    let mut comment_body = String::new();
+
+    //Spliting the body:
+    for pair in body.split('&'){
+        match pair.split_once('='){
+            Some(("body", value)) => {
+                comment_body = decode(value) ;
+            },
+            _ => {}
+        }
+    }
+
+
+    comment_body
+
+}
+
+
 
 pub fn items() -> Vec<PostCard> {
     vec![

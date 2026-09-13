@@ -8,7 +8,6 @@ use std::collections::{HashMap};
 use std::sync::{Arc, Mutex};
 
 
-
 pub fn render_comments(post_id: u32, db: Arc<Mutex<Connection>>) -> String{
     let comments = {
         let conn = db.lock().unwrap();
