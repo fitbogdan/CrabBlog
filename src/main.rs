@@ -12,7 +12,7 @@ use rusqlite::Connection;
 use crate::datatypes::{PostCard, Comment};
 use crate::db_service::send_comment;
 use crate::post::send_post;
-use crate::common::{items,comments};
+use crate::common::{comments, items, send_response};
 
 fn main(){
     run_server();
@@ -132,16 +132,14 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>){
         ("GET", ["style.css"]) => send_css(&mut stream, "static/style.css".to_string()),
 
         ("POST", ["post", id, "reply"]) => {
-            // let rb = format!("Hello, your ID is: {} <br> This is your body: {}", id, body);
-            // let response = format!(
-            //     "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}",
-            //     rb.len(),
-            //     rb,
-            // );
-
-            // stream.write_all(response.as_bytes()).unwrap();
             
-            let post_id = id.parse().unwrap();
+            let post_id = match id.parse::<u32>(){
+                Ok(n) => n,
+                Err(_) => {
+                    send_response(&mut stream, 400, "text/html", "Error, post_id wrong");
+                    return;
+                }
+            };
             let comment = Comment { id: 0, post_id: post_id, user_id: 0, body: body.to_string(), parent_id: None, date: Utc::now()};
 
             {
@@ -154,6 +152,46 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>){
             let response = format!("HTTP/1.1 302 Found\r\nLocation: /post/{}\r\n\r\n", post_id);
             stream.write_all(response.as_bytes()).unwrap();
         },
+
+        ("POST", ["post", id, "reply", comment_parent_id]) => {
+
+            //TODO match Id with OK
+
+
+
+            let post_id = match id.parse::<u32>(){
+                Ok(n) => n,
+                Err(_) => {
+                    send_response(&mut stream, 400, "text/html", "Error, post_id wrong");
+                    return;
+                }
+            };
+
+
+            let parent_id = match comment_parent_id.parse::<u32>(){
+                Ok(n) => n,
+                Err(_) => { 
+                    
+                    send_response(&mut stream, 400, "text/html", "Error, parent comment id wrong"); 
+
+                    return;
+                }
+            };
+
+            let comment = Comment{id: 0, post_id: post_id, user_id: 0, body: body.to_string(), parent_id: Some(parent_id), date: Utc::now()};
+
+
+            {
+
+                let conn = db.lock().unwrap();
+                send_comment(&conn, &comment);
+
+            }
+
+
+            let response = format!("HTTP/1.1 302 Found\r\nLocation: /post/{}\r\n\r\n", post_id);
+            stream.write_all(response.as_bytes()).unwrap();
+        }
         _ => {
             send_404(&mut stream);
         },

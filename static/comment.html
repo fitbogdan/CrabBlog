@@ -15,7 +15,7 @@
     <summary class="font-display underline text-lg text-ink hover:text-green-400 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
         reply
     </summary>
-    <form method="post" action="/post/{{POST_ID}}/reply/comment-{{COMMENT_ID}}" class="flex flex-col gap-2 mt-3 max-w-md">
+    <form method="post" action="/post/{{POST_ID}}/reply/{{COMMENT_ID}}" class="flex flex-col gap-2 mt-3 max-w-md">
         <textarea name="body" class="font-sans text-sm text-ink bg-bg-deep border-2 border-outline p-2 resize-none overflow-y-auto max-h-64" rows="2" placeholder="Write a reply..." oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,256)+'px'"></textarea>
         <button type="submit" class="pixel-btn self-start">Post reply</button>
     </form>
