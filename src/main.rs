@@ -6,7 +6,7 @@ pub mod post;
 pub mod datatypes;
 pub mod common;
 pub mod db_service;
-use chrono::{DateTime, Utc};
+use chrono::{Utc};
 use rusqlite::Connection;
 
 use crate::datatypes::{PostCard, Comment};
@@ -18,7 +18,7 @@ fn main(){
     run_server();
 }
 
-pub fn render_home_page(home_loc: &str, post_card_loc: &str, items: Vec<PostCard>, comments: Vec<Comment>) -> String{
+pub fn render_home_page(home_loc: &str, post_card_loc: &str, items: Vec<PostCard>) -> String{
     // println!("Rendering home page, with {} posts", items.len());
 
     let mut final_post_html: String = "".to_string();
@@ -46,7 +46,7 @@ pub fn render_home_page(home_loc: &str, post_card_loc: &str, items: Vec<PostCard
 
 pub fn send_home(stream: &mut TcpStream){
 
-    let rb = render_home_page("static/home.html", "static/post_card.html", items(), comments());
+    let rb = render_home_page("static/home.html", "static/post_card.html", items());
     let response = format!(
         "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}",
         rb.len(),
