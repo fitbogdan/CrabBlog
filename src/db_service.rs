@@ -24,6 +24,8 @@ pub fn create_db() -> Connection{
 }
 
 pub fn get_comment(conn: &Connection, post_id: u32) -> Vec<Comment>{
+    //Returns escaped comment
+    //Example: "<" will be returned as &lt; Etc..
 
     let mut stmt = conn.prepare(
         "SELECT id, post_id, parent_id, user_id, body, date FROM comments WHERE post_id = ?1"

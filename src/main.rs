@@ -6,7 +6,7 @@ pub mod post;
 pub mod datatypes;
 pub mod common;
 pub mod db_service;
-use chrono::{Utc};
+use chrono::{DateTime, Utc};
 use rusqlite::Connection;
 
 use crate::datatypes::{PostCard, Comment};
@@ -99,7 +99,7 @@ pub fn send_image(stream: &mut TcpStream, file_path: &str){
 }
 
 
-pub fn read_request(request_line: String, path: &mut String, method: &mut String){
+pub fn read_request(request_line: &str, path: &mut String, method: &mut String){
 
     let mut parts = request_line.split_whitespace();
     *method = parts.next().unwrap_or("").to_string();
@@ -123,10 +123,77 @@ pub fn send_404(stream: &mut TcpStream){
     stream.write_all(response.as_bytes()).unwrap();
 }
 
+pub fn get_cookie(request: &str, cookie_name: &str) -> Option<String>{
+
+    for line in request.lines(){
+        if line.to_lowercase().starts_with("cookie:"){
+            let rest = line[7..].trim();
+
+            for pair in rest.split(";"){
+                let pair_trimmed = pair.trim();
+                if let Some((key, value)) = pair_trimmed.split_once("="){
+                    if key == cookie_name{
+
+                        return Some(value.to_string());
+                    }
+                }
+            }
+
+        }
+    }
+
+    None
+}
+
+
+pub fn handle_reply(stream: &mut TcpStream, post_id: &str, parent_id: Option<&str>, body: &str, user_id: u32, date: DateTime<Utc>, db: &Arc<Mutex<Connection>>){
+    
+    let post_id_fin = match post_id.parse::<u32>(){
+        Ok(n) => n,
+        Err(_) => {
+            send_response(stream, 400, "text/html", "Error, post_id wrong");
+            return;
+        }
+    };
+
+    let parent_id_fin: Option<u32> = match parent_id{
+
+        None => None,
+        Some(v) => match v.parse::<u32>(){
+
+            Ok(n) => Some(n),
+            Err(_) => {send_response(stream, 400, "text/html", "Bad Parent Id"); return;}
+        },
+    };
+
+
+    let comment = Comment { id: 0, post_id: post_id_fin, user_id: user_id, body: body.to_string(), parent_id: parent_id_fin, date: date};
+
+
+    {
+    let conn = db.lock().unwrap();
+    send_comment(&conn, &comment);
+    } //Scope conn so it releases the lock
+
+
+    let response = format!("HTTP/1.1 302 Found\r\nLocation: /post/{}\r\n\r\n", post_id);
+    stream.write_all(response.as_bytes()).unwrap();
+
+}
+
 pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>){
     let mut buffer = [0; 1024];
     stream.read(&mut buffer).unwrap();
     let request = String::from_utf8_lossy(&buffer[..]);
+
+
+    let user_id: u32 = match get_cookie(&request, "user_id"){
+        Some(v) => v.parse().unwrap_or(0),
+        None => 0,
+    };
+
+    
+    println!("Got this user: {}", user_id);
 
     println!("Got incoming request:\n{}", request);
 
@@ -135,9 +202,12 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>){
     let mut path: String = "".to_string();
     let body = get_body(&request);
 
-    read_request(request.to_string(), &mut path, &mut method);
+    read_request(&request.to_string(), &mut path, &mut method);
     let segments: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
     // println!("Got path: {}, and method: {}", path, method);
+
+
+
 
     match (method.as_str(), segments.as_slice()){
         ("GET", []) => send_home(&mut stream),
@@ -150,67 +220,9 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>){
         },
         ("GET", ["style.css"]) => send_css(&mut stream, "static/style.css".to_string()),
 
-        ("POST", ["post", id, "reply"]) => {
-            
-            let post_id = match id.parse::<u32>(){
-                Ok(n) => n,
-                Err(_) => {
-                    send_response(&mut stream, 400, "text/html", "Error, post_id wrong");
-                    return;
-                }
-            };
-            let comment = Comment { id: 0, post_id: post_id, user_id: 0, body: body.to_string(), parent_id: None, date: Utc::now()};
+        ("POST", ["post", post_id, "reply"]) => handle_reply(&mut stream, post_id, None, body, user_id, Utc::now(), &db),
 
-            {
-            let conn = db.lock().unwrap();
-            send_comment(&conn, &comment);
-            } //Scope conn so it releases the lock
-
-
-
-            let response = format!("HTTP/1.1 302 Found\r\nLocation: /post/{}\r\n\r\n", post_id);
-            stream.write_all(response.as_bytes()).unwrap();
-        },
-
-        ("POST", ["post", id, "reply", comment_parent_id]) => {
-
-            //TODO match Id with OK
-
-
-
-            let post_id = match id.parse::<u32>(){
-                Ok(n) => n,
-                Err(_) => {
-                    send_response(&mut stream, 400, "text/html", "Error, post_id wrong");
-                    return;
-                }
-            };
-
-
-            let parent_id = match comment_parent_id.parse::<u32>(){
-                Ok(n) => n,
-                Err(_) => { 
-                    
-                    send_response(&mut stream, 400, "text/html", "Error, parent comment id wrong"); 
-
-                    return;
-                }
-            };
-
-            let comment = Comment{id: 0, post_id: post_id, user_id: 0, body: body.to_string(), parent_id: Some(parent_id), date: Utc::now()};
-
-
-            {
-
-                let conn = db.lock().unwrap();
-                send_comment(&conn, &comment);
-
-            }
-
-
-            let response = format!("HTTP/1.1 302 Found\r\nLocation: /post/{}\r\n\r\n", post_id);
-            stream.write_all(response.as_bytes()).unwrap();
-        }
+        ("POST", ["post", post_id, "reply", parent_id]) =>  handle_reply(&mut stream, post_id, Some(parent_id), body, user_id, Utc::now(), &db),
         _ => {
             send_404(&mut stream);
         },
