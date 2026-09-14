@@ -1,7 +1,7 @@
 use rusqlite::{Connection,params};
 use crate::datatypes::Comment;
 use chrono::{DateTime, Utc};
-use crate::common::{decode_body};
+use crate::common::{decode_body,encode_html};
 
 pub fn create_db() -> Connection{
 
@@ -32,9 +32,10 @@ pub fn get_comment(conn: &Connection, post_id: u32) -> Vec<Comment>{
     let rows = stmt.query_map([post_id], |row|{
         let date_str: String = row.get(5).unwrap();
         let date = DateTime::parse_from_rfc3339(&date_str).unwrap().with_timezone(&Utc);
+        let body_raw: String = row.get(4).unwrap();
 
-        // let body_raw: String = row.get(4).unwrap();
 
+        let body_encoded = encode_html(&body_raw);
 
         // let body_decoded = decode_body(&body_raw);
 
@@ -43,7 +44,7 @@ pub fn get_comment(conn: &Connection, post_id: u32) -> Vec<Comment>{
             post_id: row.get(1).unwrap(),
             parent_id: row.get(2).unwrap(),
             user_id: row.get(3).unwrap(),
-            body: row.get(4).unwrap(),
+            body: body_encoded,
             date: date,
         })
     }).unwrap();

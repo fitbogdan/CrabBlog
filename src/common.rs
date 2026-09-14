@@ -76,6 +76,37 @@ pub fn decode_body(body: &str) -> String{
 
 }
 
+pub fn encode_html(body: &str) -> String{
+    let mut out = String::new();
+
+    for c in body.chars(){
+        match c {
+            '<' => {
+                out.push_str("&lt;");
+            },
+            '>' => {
+                out.push_str("&gt;");
+            }
+            '&' => {
+                out.push_str("&amp;")
+            }
+            '\'' => {
+                out.push_str("&#39;");
+            }
+
+            '"' => {
+                out.push_str("&quot;");
+            }
+            _ => {
+                out.push(c);
+            }
+        }
+    }
+
+
+    out
+}
+
 
 
 pub fn items() -> Vec<PostCard> {
