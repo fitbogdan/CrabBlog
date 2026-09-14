@@ -2,23 +2,6 @@ use crate::datatypes::{PostCard,Comment};
 use chrono::{Utc,Duration};
 use std::net::{TcpStream};
 use std::io::{Write};
-pub fn send_response(stream: &mut TcpStream, status: u32, content_type: &str, body: &str){
-
-
-    let reason = match status {
-        200 => "OK",
-        404 => "Not Found",
-        500 => "Internal Server Error",
-        _ => "Unknown",
-    };
-
-    let response = format!(
-        "HTTP/1.1 {} {}\r\nContent-Type: {}\r\nContent-Length: {}\r\n\r\n{}",
-        status, reason, content_type, body.len(), body
-    );
-
-    stream.write_all(response.as_bytes()).unwrap();
-}
 
 pub fn decode(body: &str) -> String{
 

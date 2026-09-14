@@ -6,13 +6,16 @@ pub mod post;
 pub mod datatypes;
 pub mod common;
 pub mod db_service;
-use chrono::{DateTime, Utc};
+pub mod handlers;
+pub mod http;
+use chrono::{Utc};
 use rusqlite::Connection;
 
-use crate::datatypes::{PostCard, Comment};
-use crate::db_service::send_comment;
+
+use crate::handlers::{handle_reply,send_home,send_css,send_image};
+use crate::http::{get_cookie, send_404};
+use crate::datatypes::{PostCard};
 use crate::post::send_post;
-use crate::common::{items, send_response};
 
 fn main(){
     run_server();
@@ -44,59 +47,6 @@ pub fn render_home_page(home_loc: &str, post_card_loc: &str, items: Vec<PostCard
     rb
 }
 
-pub fn send_home(stream: &mut TcpStream){
-
-    let rb = render_home_page("static/home.html", "static/post_card.html", items());
-    let response = format!(
-        "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}",
-        rb.len(),
-        rb,
-    );
-
-    stream.write_all(response.as_bytes()).unwrap();
-}
-
-
-
-
-pub fn send_css(stream: &mut TcpStream, file_path: String){
-    match std::fs::read_to_string(&file_path){
-        Ok(contents) => {
-            let response = format!(
-                "HTTP/1.1 200 OK\r\nContent-Type: text/css\r\nContent-Length: {}\r\n\r\n{}",
-                contents.len(), contents
-            );
-
-            stream.write_all(response.as_bytes()).unwrap();
-        },
-        Err(_) => {
-            let rb = "<h1>404 Not found</h1>";
-            let response = format!(
-                "HTTP/1.1 404 NOT FOUND\r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}",
-                rb.len(), rb
-            );
-            stream.write_all(response.as_bytes()).unwrap();
-        }
-    }
-}
-
-pub fn send_image(stream: &mut TcpStream, file_path: &str){
-    let bytes = match std::fs::read(file_path){
-        Ok(b) => b,
-        Err(_) => {send_404(stream); return;}
-    };
-
-    let content_type = if file_path.ends_with(".jpg") { "image/jpeg" } else { "application/octet-stream" };
-
-    let headers = format!(
-        "HTTP/1.1 200 OK\r\nContent-Type: {}\r\nContent-Length: {}\r\n\r\n",
-        content_type, bytes.len()
-    );
-
-    stream.write_all(headers.as_bytes()).unwrap();
-    stream.write_all(&bytes).unwrap();
-
-}
 
 
 pub fn read_request(request_line: &str, path: &mut String, method: &mut String){
@@ -112,78 +62,20 @@ pub fn get_body(request: &str) -> &str{
            .unwrap_or("")
 }
 
-pub fn send_404(stream: &mut TcpStream){
-    let rb = "<h1> 404 Not found </h1>";
-    let response = format!(
-        "HTTP/1.1 404 NOT FOUND \r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}",
-        rb.len(),
-        rb,
-    );
-
-    stream.write_all(response.as_bytes()).unwrap();
-}
-
-pub fn get_cookie(request: &str, cookie_name: &str) -> Option<String>{
-
-    for line in request.lines(){
-        if line.to_lowercase().starts_with("cookie:"){
-            let rest = line[7..].trim();
-
-            for pair in rest.split(";"){
-                let pair_trimmed = pair.trim();
-                if let Some((key, value)) = pair_trimmed.split_once("="){
-                    if key == cookie_name{
-
-                        return Some(value.to_string());
-                    }
-                }
-            }
-
-        }
-    }
-
-    None
-}
 
 
-pub fn handle_reply(stream: &mut TcpStream, post_id: &str, parent_id: Option<&str>, body: &str, user_id: u32, date: DateTime<Utc>, db: &Arc<Mutex<Connection>>){
-    
-    let post_id_fin = match post_id.parse::<u32>(){
-        Ok(n) => n,
-        Err(_) => {
-            send_response(stream, 400, "text/html", "Error, post_id wrong");
-            return;
-        }
-    };
-
-    let parent_id_fin: Option<u32> = match parent_id{
-
-        None => None,
-        Some(v) => match v.parse::<u32>(){
-
-            Ok(n) => Some(n),
-            Err(_) => {send_response(stream, 400, "text/html", "Bad Parent Id"); return;}
-        },
-    };
-
-
-    let comment = Comment { id: 0, post_id: post_id_fin, user_id: user_id, body: body.to_string(), parent_id: parent_id_fin, date: date};
-
-
-    {
-    let conn = db.lock().unwrap();
-    send_comment(&conn, &comment);
-    } //Scope conn so it releases the lock
-
-
-    let response = format!("HTTP/1.1 302 Found\r\nLocation: /post/{}\r\n\r\n", post_id);
-    stream.write_all(response.as_bytes()).unwrap();
-
-}
 
 pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>){
+
+    //TODO: read full request in two passes:
+    //First read 1024 bytes until \r\n\r\n, and read Content-Length's value, call it X
+    //Then read X bytes
     let mut buffer = [0; 1024];
+
+
     stream.read(&mut buffer).unwrap();
+
+
     let request = String::from_utf8_lossy(&buffer[..]);
 
 

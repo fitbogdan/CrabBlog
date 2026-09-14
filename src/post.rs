@@ -1,7 +1,8 @@
 use rusqlite::Connection;
 
 use crate::datatypes::{PostCard,Comment};
-use crate::common::{items,send_response};
+use crate::common::{items};
+use crate::http::{send_response};
 use crate::db_service::get_comment;
 use std::net::{TcpStream};
 use std::collections::{HashMap};
