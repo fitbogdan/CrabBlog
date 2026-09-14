@@ -29,7 +29,7 @@ pub fn render_home_page(home_loc: &str, post_card_loc: &str, items: Vec<PostCard
         post_html = post_html.replace("{{POST_DATE}}", &items[i].date);
         post_html = post_html.replace("{{POST_TITLE}}", &items[i].title);
         post_html = post_html.replace("{{POST_DESCRIPTION}}", &items[i].description);
-        post_html = post_html.replace("{{POST_IMAGE_URL}}", "https://upload.wikimedia.org/wikipedia/commons/5/57/German_shepard_female.jpg");
+        post_html = post_html.replace("{{POST_IMAGE_URL}}", "/image");
         post_html = post_html.replace("{{POST_ID}}", &format!("/post/{}", &items[i].id));
 
         final_post_html = final_post_html + &post_html;
@@ -80,6 +80,24 @@ pub fn send_css(stream: &mut TcpStream, file_path: String){
     }
 }
 
+pub fn send_image(stream: &mut TcpStream, file_path: &str){
+    let bytes = match std::fs::read(file_path){
+        Ok(b) => b,
+        Err(_) => {send_404(stream); return;}
+    };
+
+    let content_type = if file_path.ends_with(".jpg") { "image/jpeg" } else { "application/octet-stream" };
+
+    let headers = format!(
+        "HTTP/1.1 200 OK\r\nContent-Type: {}\r\nContent-Length: {}\r\n\r\n",
+        content_type, bytes.len()
+    );
+
+    stream.write_all(headers.as_bytes()).unwrap();
+    stream.write_all(&bytes).unwrap();
+
+}
+
 
 pub fn read_request(request_line: String, path: &mut String, method: &mut String){
 
@@ -123,6 +141,7 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>){
 
     match (method.as_str(), segments.as_slice()){
         ("GET", []) => send_home(&mut stream),
+        ("GET", ["image"]) => send_image(&mut stream, "static/zeth.jpg"),
         ("GET", ["post", id])  => {
             match id.parse::<u32>() {
                 Ok(post_id) => send_post(&mut stream, post_id, db),
