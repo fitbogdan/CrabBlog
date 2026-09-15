@@ -14,7 +14,7 @@ pub fn handle_reply(stream: &mut TcpStream, post_id: &str, parent_id: Option<&st
     let post_id_fin = match post_id.parse::<u32>(){
         Ok(n) => n,
         Err(_) => {
-            send_response(stream, 400, "text/html", "Error, post_id wrong");
+            send_response(stream, 400, "text/html", "Error, post_id wrong", None);
             return;
         }
     };
@@ -25,7 +25,7 @@ pub fn handle_reply(stream: &mut TcpStream, post_id: &str, parent_id: Option<&st
         Some(v) => match v.parse::<u32>(){
 
             Ok(n) => Some(n),
-            Err(_) => {send_response(stream, 400, "text/html", "Bad Parent Id"); return;}
+            Err(_) => {send_response(stream, 400, "text/html", "Bad Parent Id", None); return;}
         },
     };
 

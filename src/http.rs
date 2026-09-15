@@ -3,19 +3,27 @@ use std::{io::Write, net::TcpStream};
 
 
 
-pub fn send_response(stream: &mut TcpStream, status: u32, content_type: &str, body: &str){
+pub fn send_response(stream: &mut TcpStream, status: u32, content_type: &str, body: &str, extra_header: Option<&str>){
 
 
     let reason = match status {
         200 => "OK",
+        302 => "Found",
+        400 => "Bad Request" ,
         404 => "Not Found",
         500 => "Internal Server Error",
         _ => "Unknown",
     };
 
+    let extra = match extra_header{
+        Some(h) => format!("{}\r\n", h),
+        None => String::new(),
+    };
+
+
     let response = format!(
-        "HTTP/1.1 {} {}\r\nContent-Type: {}\r\nContent-Length: {}\r\n\r\n{}",
-        status, reason, content_type, body.len(), body
+        "HTTP/1.1 {} {}\r\nContent-Type: {}\r\nContent-Length: {}\r\n{}\r\n{}",
+        status, reason, content_type, body.len(), extra, body
     );
 
     stream.write_all(response.as_bytes()).unwrap();

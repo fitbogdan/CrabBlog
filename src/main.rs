@@ -1,5 +1,5 @@
 use std::net::{TcpListener, TcpStream};
-use std::io::{Read,Write};
+use std::io::{Read};
 use std::sync::{Arc, Mutex};
 use std::thread;
 pub mod post;
@@ -13,7 +13,7 @@ use rusqlite::Connection;
 
 
 use crate::handlers::{handle_reply,send_home,send_css,send_image};
-use crate::http::{get_cookie, send_404};
+use crate::http::{get_cookie, send_404, send_response};
 use crate::datatypes::{PostCard};
 use crate::post::send_post;
 
@@ -63,20 +63,79 @@ pub fn get_body(request: &str) -> &str{
 }
 
 
+pub fn read_request_bytes(stream: &mut TcpStream) -> Option<Vec<u8>>{
+    let mut buffer:[u8; 1024] = [0; 1024];
 
+    let mut n = stream.read(&mut buffer).unwrap();
+    let mut data: Vec<u8> = Vec::new();
+    let mut header_end = 0;
+    while n > 0{
+        data.extend_from_slice(&buffer[0..n]);
+
+        if let Some(index) = data.windows(4).position(|w| w == b"\r\n\r\n"){
+            header_end = index;
+            break;
+        }
+
+        n = stream.read(&mut buffer).unwrap();
+    }
+
+
+    if n == 0 { 
+        return None; 
+    }
+
+    //Get Content-Length:
+    let mut content_length: Option<usize> = None;
+
+    for line in String::from_utf8_lossy(&data[0..header_end]).lines(){
+        if line.to_lowercase().starts_with("content-length: "){
+            if let Some((_, v)) = line.split_once(":"){
+                content_length = match v.trim().parse::<usize>(){
+                    Ok(v) => Some(v),
+                    Err(_) => None,
+                };
+
+
+                break; 
+            }
+        }
+    }
+
+    if let Some(l) = content_length{
+        while data.len() < l + header_end + 4{
+            n = stream.read(&mut buffer).unwrap();
+
+            if n == 0{
+                break;
+            }
+
+            data.extend_from_slice(&buffer[0..n]);
+        }
+    }
+
+
+
+    Some(data) 
+}
 
 pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>){
 
     //TODO: read full request in two passes:
     //First read 1024 bytes until \r\n\r\n, and read Content-Length's value, call it X
     //Then read X bytes
-    let mut buffer = [0; 1024];
+    // let mut buffer = [0; 1024];
 
 
-    stream.read(&mut buffer).unwrap();
+    // stream.read(&mut buffer).unwrap();
+    let request_bytes = match read_request_bytes(&mut stream){
+        Some(r) => r,
+        None => return,
+    };
+
+    let request = String::from_utf8_lossy(&request_bytes);
 
 
-    let request = String::from_utf8_lossy(&buffer[..]);
 
 
     let user_id: u32 = match get_cookie(&request, "user_id"){
@@ -115,6 +174,13 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>){
         ("POST", ["post", post_id, "reply"]) => handle_reply(&mut stream, post_id, None, body, user_id, Utc::now(), &db),
 
         ("POST", ["post", post_id, "reply", parent_id]) =>  handle_reply(&mut stream, post_id, Some(parent_id), body, user_id, Utc::now(), &db),
+        
+        ("GET", ["login"]) => {
+
+            send_response(&mut stream, 302, "text/html", "", Some("Set-Cookie: user_id=1; Path=/; HttpOnly\r\nLocation: /"));
+
+        },
+        
         _ => {
             send_404(&mut stream);
         },

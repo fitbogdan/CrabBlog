@@ -114,5 +114,5 @@ pub fn send_post(stream: &mut TcpStream, id: u32, db: Arc<Mutex<Connection>>){
     };
 
 
-    send_response(stream, 200, "text/html", &rb);
+    send_response(stream, 200, "text/html", &rb, None);
 }
