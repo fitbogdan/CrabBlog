@@ -82,12 +82,36 @@ pub fn send_comment(conn: &Connection, comment: &Comment){
     ).unwrap();
 }
 
-pub fn create_user(){
+pub fn log_in(){
+    //1: Check if user exists
+        //No => Redirect
+
+    //2: Verify agaisnt Hash password
+    //3: Pull password from db
+    //4: Check validity
+    //If valid: Return Success!
+    //5: Get user_id
+    //6: Hand new token with cookie_from_user()
 
 }
 
+pub fn create_user(){
+    //1: Check if already exists
+        //If yes => Redirect
+
+    //2: Hash password
+    //3: Push to db
+    //4: Hand new token
+
+}
+
+pub fn cookie_from_user(){
+    //Get user_id,
+    //Query sessions table for cookie
+}
+
 pub fn create_session(){
-    
+    //Generate cookie, push to sessions table
 }
 
 
