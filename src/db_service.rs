@@ -8,7 +8,7 @@ pub fn create_db() -> Connection{
 
     let conn = Connection::open("blog.db").unwrap();
 
-    conn.execute(
+    conn.execute_batch(
         "CREATE TABLE IF NOT EXISTS comments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             post_id INTEGER NOT NULL,
@@ -16,8 +16,18 @@ pub fn create_db() -> Connection{
             user_id INTEGER NOT NULL,
             body TEXT NOT NULL,
             date TEXT NOT NULL
-    )", 
-        []
+            );
+            CREATE TABLE IF NOT EXISTS users(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL UNIQUE,
+                password TEXT NOT NULL,
+                date_joined TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS sessions(
+                token TEXT NOT NULL PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                created_at TEXT NOT NULL
+            );" 
     ).unwrap();
 
     conn
@@ -70,6 +80,14 @@ pub fn send_comment(conn: &Connection, comment: &Comment){
             comment.date.to_rfc3339(),
         ]
     ).unwrap();
+}
+
+pub fn create_user(){
+
+}
+
+pub fn create_session(){
+    
 }
 
 

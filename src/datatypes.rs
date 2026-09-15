@@ -46,3 +46,34 @@ impl Comment{
         Comment { id, post_id, user_id, date, body, parent_id }
     }
 }
+
+pub struct User{
+    pub id: u32,
+    pub username: String,
+    pub password_hash: String,
+    pub date_joined: DateTime<Utc>,
+}
+
+impl User{
+    pub fn new(
+        id: u32,
+        username: String,
+        password_hash: String,
+        date_joined: DateTime<Utc>,
+    ) -> User{
+        User { id, username, password_hash, date_joined }
+    }
+}
+
+pub struct Session{
+    pub token: String,
+    pub user_id: u32,
+    pub created_at: DateTime<Utc>,
+}
+
+
+impl Session{
+    pub fn new(token: String, user_id: u32, created_at: DateTime<Utc>) -> Session{
+        Session { token, user_id, created_at }
+    }
+}

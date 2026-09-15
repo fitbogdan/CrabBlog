@@ -177,7 +177,7 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>){
         
         ("GET", ["login"]) => {
 
-            send_response(&mut stream, 302, "text/html", "", Some("Set-Cookie: user_id=1; Path=/; HttpOnly\r\nLocation: /"));
+            send_response(&mut stream, 302, "text/html", "", Some("Set-Cookie: user_id=69; Path=/; HttpOnly\r\nLocation: /"));
 
         },
         
