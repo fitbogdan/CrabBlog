@@ -3,6 +3,8 @@ use crate::datatypes::Comment;
 use chrono::{DateTime, Utc};
 use crate::common::{decode_body,encode_html};
 
+
+
 pub fn create_db() -> Connection{
 
 
@@ -82,17 +84,39 @@ pub fn send_comment(conn: &Connection, comment: &Comment){
     ).unwrap();
 }
 
-pub fn log_in(){
-    //1: Check if user exists
-        //No => Redirect
+pub fn log_in(username: &str, password: &str, conn: &Connection) -> Option<String>{
 
-    //2: Verify agaisnt Hash password
-    //3: Pull password from db
-    //4: Check validity
-    //If valid: Return Success!
-    //5: Get user_id
-    //6: Hand new token with cookie_from_user()
+    let mut stmt = conn.prepare(
+        "SELECT password, id FROM users WHERE username = ?1"
+    ).unwrap();
 
+
+    let result = stmt.query_one([username], |row| {
+        let id: u32 = row.get(1).unwrap();
+        let hash: String = row.get(0).unwrap();        
+        Ok((id , hash))
+    });
+
+    let (user_id, stored_password_hash) = match result{
+        Ok(r) => r,
+        _ => return None, 
+    };
+
+
+    let is_match = match bcrypt::verify(password, &stored_password_hash){
+        Ok(true) => true,
+        _ => false,
+    };
+
+    if !is_match{
+        return None;
+    }
+
+
+    //We have a match
+    let cookie = generate_cookie(conn, user_id);
+
+    return cookie;
 }
 
 pub fn create_user(){
@@ -103,11 +127,64 @@ pub fn create_user(){
     //3: Push to db
     //4: Hand new token
 
+    
+
+
 }
 
-pub fn cookie_from_user(){
+
+pub fn generate_token() -> String{
+
+    let mut bytes = [0u8, 32];
+    getrandom::fill(&mut bytes).unwrap();
+
+
+    let mut token = String::new();
+
+    for b in bytes{
+
+        //{:02x} -> Padded by 0, lowercase
+        token.push_str(&format!("{:02x}", b));
+    }
+
+    token
+}
+
+pub fn generate_cookie(conn: &Connection, user_id: u32) -> Option<String>{
+
+    let token = generate_token();
+
+    let result = conn.execute(
+        "INSERT INTO sessions (user_id,token,created_at)
+        VALUES(?1, ?2, ?3)", 
+        params![user_id, token, Utc::now().to_rfc3339()]
+    );
+
+    match result{
+       Ok(_) => Some(token),
+       _ => None,
+    }
+}
+
+pub fn cookie_from_user(conn: &Connection, user_id: u32) -> Option<String>{
     //Get user_id,
     //Query sessions table for cookie
+
+    let mut stmt = conn.prepare(
+        "SELECT token FROM sessions WHERE user_id = ?1"
+    ).unwrap();
+
+    let result = stmt.query_one([user_id], |r|{
+        let token: String = r.get(0).unwrap();
+        Ok(token)
+    });
+
+    let cookie = match result{
+        Ok(c) => Some(c),
+        _ => None,
+    };
+
+    cookie 
 }
 
 pub fn create_session(){
