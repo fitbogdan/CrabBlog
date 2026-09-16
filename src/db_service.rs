@@ -119,7 +119,7 @@ pub fn log_in(username: &str, password: &str, conn: &Connection) -> Option<Strin
     return cookie;
 }
 
-pub fn create_user(){
+pub fn create_user(conn: &Connection, username: &str, password: &str) -> Option<String>{
     //1: Check if already exists
         //If yes => Redirect
 
@@ -127,9 +127,29 @@ pub fn create_user(){
     //3: Push to db
     //4: Hand new token
 
-    
+    let res = bcrypt::hash(password, 12);
+    let password_hash = match res {
+        Ok(t) => t,
+        Err(_) => return None
+    };
 
 
+
+    let res = conn.execute(
+    "INSERT INTO users (username, password, date_joined)
+        VALUES(?1, ?2, ?3)",
+        
+        params![username, password_hash, Utc::now().to_rfc3339()] 
+    );
+    match res{
+        Ok(_) => {}, //Was able to insert
+        Err(_) => return None // Duplicate
+    }
+
+
+    let user_id = conn.last_insert_rowid() as u32;
+
+    generate_cookie(conn, user_id)
 }
 
 
