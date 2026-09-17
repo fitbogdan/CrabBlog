@@ -9,8 +9,18 @@ use std::io::{Write};
 use std::sync::{Arc, Mutex};
 use rusqlite::Connection;
 
-pub fn handle_reply(stream: &mut TcpStream, post_id: &str, parent_id: Option<&str>, body: &str, user_id: u32, date: DateTime<Utc>, db: &Arc<Mutex<Connection>>){
+pub fn handle_reply(stream: &mut TcpStream, post_id: &str, parent_id: Option<&str>, body: &str, user_id: Option<u32>, date: DateTime<Utc>, db: &Arc<Mutex<Connection>>){
     
+    
+    let uid = match user_id{
+        Some(id) => id,
+        None => {
+            send_response(stream, 401, "text/html", "<h1>Log in to comment</h1>", None);
+            return;
+        }
+    };
+
+
     let post_id_fin = match post_id.parse::<u32>(){
         Ok(n) => n,
         Err(_) => {
@@ -30,7 +40,7 @@ pub fn handle_reply(stream: &mut TcpStream, post_id: &str, parent_id: Option<&st
     };
 
 
-    let comment = Comment { id: 0, post_id: post_id_fin, user_id: user_id, body: body.to_string(), parent_id: parent_id_fin, date: date};
+    let comment = Comment { id: 0, post_id: post_id_fin, user_id: uid, body: body.to_string(), parent_id: parent_id_fin, date: date};
 
 
     {

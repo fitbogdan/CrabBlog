@@ -155,7 +155,7 @@ pub fn create_user(conn: &Connection, username: &str, password: &str) -> Option<
 
 pub fn generate_token() -> String{
 
-    let mut bytes = [0u8, 32];
+    let mut bytes = [0u8; 32];
     getrandom::fill(&mut bytes).unwrap();
 
 
@@ -207,8 +207,24 @@ pub fn cookie_from_user(conn: &Connection, user_id: u32) -> Option<String>{
     cookie 
 }
 
-pub fn create_session(){
-    //Generate cookie, push to sessions table
+pub fn user_from_cookie(conn: &Connection, cookie: &str) -> Option<u32>{
+    let mut stmt = conn.prepare(
+        "SELECT user_id FROM sessions WHERE token = ?1"
+    ).unwrap();
+
+    let result = stmt.query_one([cookie], |r|{
+        let user_id: u32 = r.get(0).unwrap();
+        Ok(user_id)
+    });
+
+
+    let id = match result{
+        Ok(i) => Some(i),
+        _ => None,
+    };
+
+    id
 }
+
 
 

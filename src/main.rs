@@ -13,7 +13,8 @@ use rusqlite::Connection;
 
 
 use crate::handlers::{handle_reply,send_home,send_css,send_image};
-use crate::http::{get_cookie, send_404, send_response};
+use crate::http::{get_cookie, send_404,send_response};
+use crate::common::{decode_body_field};
 use crate::datatypes::{PostCard};
 use crate::post::send_post;
 
@@ -121,13 +122,6 @@ pub fn read_request_bytes(stream: &mut TcpStream) -> Option<Vec<u8>>{
 
 pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>){
 
-    //TODO: read full request in two passes:
-    //First read 1024 bytes until \r\n\r\n, and read Content-Length's value, call it X
-    //Then read X bytes
-    // let mut buffer = [0; 1024];
-
-
-    // stream.read(&mut buffer).unwrap();
     let request_bytes = match read_request_bytes(&mut stream){
         Some(r) => r,
         None => return,
@@ -136,15 +130,23 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>){
     let request = String::from_utf8_lossy(&request_bytes);
 
 
+    let token = get_cookie(&request, "token");
 
 
-    let user_id: u32 = match get_cookie(&request, "user_id"){
-        Some(v) => v.parse().unwrap_or(0),
-        None => 0,
+    let mut user_id: Option<u32> = None;
+    user_id = match token{
+        Some(token) => {
+            let conn = db.lock().unwrap();
+
+
+            db_service::user_from_cookie(&conn, &token)
+        },
+
+        _=> None,
     };
 
-    
-    println!("Got this user: {}", user_id);
+
+    println!("Got this user: {:?}", user_id);
 
     println!("Got incoming request:\n{}", request);
 
@@ -171,15 +173,78 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>){
         },
         ("GET", ["style.css"]) => send_css(&mut stream, "static/style.css".to_string()),
 
-        ("POST", ["post", post_id, "reply"]) => handle_reply(&mut stream, post_id, None, body, user_id, Utc::now(), &db),
+        ("POST", ["post", post_id, "reply"]) => {
 
-        ("POST", ["post", post_id, "reply", parent_id]) =>  handle_reply(&mut stream, post_id, Some(parent_id), body, user_id, Utc::now(), &db),
+
+
+
+            handle_reply(&mut stream, post_id, None, body,user_id, Utc::now(), &db);
         
-        ("GET", ["login"]) => {
+        },
 
-            send_response(&mut stream, 302, "text/html", "", Some("Set-Cookie: user_id=69; Path=/; HttpOnly\r\nLocation: /"));
+
+
+        ("POST", ["post", post_id, "reply", parent_id]) =>  {
+
+            handle_reply(&mut stream, post_id, Some(parent_id), body, user_id, Utc::now(), &db);
+        
+        }
+        
+        ("POST", ["login"]) => {
+
+            // send_response(&mut stream, 302, "text/html", "", Some("Set-Cookie: user_id=69; Path=/; HttpOnly\r\nLocation: /"));
+
+            let username = decode_body_field(body, "username");
+            let password = decode_body_field(body, "password");
+
+            let mut cookie: Option<String> = None;
+
+            {
+
+                let conn = db.lock().unwrap();
+                cookie = db_service::log_in(&username, &password, &conn);
+
+            } //Scope conn so it releases the lock
+
+            match cookie{
+                Some(c) => send_response(&mut stream, 302, "text/html", "", Some(&format!("Set-Cookie: token={}; Path=/; HttpOnly\r\nLocation: /", c))),
+                None => send_404(&mut stream),
+            };
+        },
+        ("POST", ["register"]) => {
+
+            
+            let username = decode_body_field(body, "username");
+            let password = decode_body_field(body, "password");
+
+            let mut cookie: Option<String> = None;
+
+            {
+                let conn = db.lock().unwrap();
+                cookie = db_service::create_user(&conn, &username, &password);
+            }
+
+            match cookie{
+                Some(c) => send_response(&mut stream, 302, "text/html", "", Some(&format!("Set-Cookie: token={}; Path=/; HttpOnly\r\nLocation: /", c))),
+                None => send_404(&mut stream),
+            }
 
         },
+
+        ("GET", ["login"]) => {
+            // Render login page
+            let login_html = std::fs::read_to_string("static/login.html").unwrap();
+            send_response(&mut stream, 200, "text/html", &login_html, None);
+
+        },
+
+        ("GET", ["register"]) => {
+            let register_html = std::fs::read_to_string("static/register.html").unwrap();
+
+            send_response(&mut stream, 200, "text/html", &register_html, None);
+
+        }
+
         
         _ => {
             send_404(&mut stream);

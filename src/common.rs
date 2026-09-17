@@ -2,7 +2,8 @@ use crate::datatypes::{PostCard,Comment};
 use chrono::{Utc,Duration};
 
 pub fn decode(body: &str) -> String{
-
+//Decodes a string from http format (Example space = +, etc...)
+//To ascii
     let bytes = body.as_bytes();
     let mut result_bytes: Vec<u8> = Vec::new();
     let mut i = 0;
@@ -39,6 +40,9 @@ pub fn decode(body: &str) -> String{
     String::from_utf8(result_bytes).unwrap()
 }
 
+
+//Takes in the body, splits the variables on each &, and returns the decoded string
+
 pub fn decode_body(body: &str) -> String{
     let mut comment_body = String::new();
 
@@ -54,6 +58,27 @@ pub fn decode_body(body: &str) -> String{
 
 
     comment_body
+
+}
+
+
+pub fn decode_body_field(body: &str, p: &str) -> String{
+    let mut field = String::new();
+
+    //Spliting the body:
+    for pair in body.split('&'){
+        match pair.split_once('='){
+            Some((key, value)) => {
+                if key == p{
+                    field = decode(value) ;
+                }
+            },
+            _ => {}
+        }
+    }
+
+
+    field 
 
 }
 
