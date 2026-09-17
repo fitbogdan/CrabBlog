@@ -40,7 +40,7 @@ pub fn handle_reply(stream: &mut TcpStream, post_id: &str, parent_id: Option<&st
     };
 
 
-    let comment = Comment { id: 0, post_id: post_id_fin, user_id: uid, body: body.to_string(), parent_id: parent_id_fin, date: date};
+    let comment = Comment { id: 0, post_id: post_id_fin, user_id: uid, body: body.to_string(), parent_id: parent_id_fin, date: date, username: None};
 
 
     {
@@ -55,9 +55,10 @@ pub fn handle_reply(stream: &mut TcpStream, post_id: &str, parent_id: Option<&st
 }
 
 
-pub fn send_home(stream: &mut TcpStream){
+pub fn send_home(stream: &mut TcpStream, user_id: Option<u32>){
 
-    let rb = render_home_page("static/home.html", "static/post_card.html", items());
+
+    let rb = render_home_page("static/home.html", "static/post_card.html", items(), user_id);
     let response = format!(
         "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}",
         rb.len(),

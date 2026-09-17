@@ -29,6 +29,7 @@ pub struct Comment{
     pub id: u32,
     pub post_id: u32,
     pub user_id: u32,
+    pub username: Option<String>,
     pub date: DateTime<Utc>,
     pub body: String,
     pub parent_id: Option<u32>,
@@ -39,11 +40,12 @@ impl Comment{
         id: u32,
         post_id: u32,
         user_id:u32,
+        username: Option<String>,
         date: DateTime<Utc>,
         body: String,
         parent_id: Option<u32>,
     ) -> Comment{
-        Comment { id, post_id, user_id, date, body, parent_id }
+        Comment { id, username, post_id, user_id, date, body, parent_id }
     }
 }
 

@@ -141,57 +141,6 @@ pub fn items() -> Vec<PostCard> {
     ]
 }
 
-pub fn comments() -> Vec<Comment>{
-    vec![
-        Comment::new(
-            1,
-            1,
-            1,
-            Utc::now(),
-            "Zethen Machen".to_string(),
-            None,
-        ),
-
-        Comment::new(
-            4,
-            1,
-            2,
-            Utc::now(),
-            "Personally I hate Zeth".to_string(),
-            Some(1),
-        ),
-
-        Comment::new(
-            5,
-            1,
-            2,
-            Utc::now(),
-            "You big fat piece of shit how dare you say that about Zeth i hope you get hemmoroids".to_string(),
-            Some(1),
-        ),
-
-        Comment::new(
-            2,
-            1,
-            1,
-            Utc::now()+Duration::minutes(30),
-            "Zethen Machen 30 minuten Hunden Wursten".to_string(),
-            None,
-        ),
-
-
-        Comment::new(
-            3,
-            2,
-            2,
-            Utc::now()+Duration::minutes(30),
-            "Zethen Machen 30 minuten Hunden Wursten".to_string(),
-            None,
-        ),
-    ]
-
-    
-}
 
 pub fn get_username(id: u32) -> &'static str{
     match id {

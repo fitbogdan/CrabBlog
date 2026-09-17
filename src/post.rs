@@ -42,9 +42,14 @@ pub fn render_comments(post_id: u32, db: Arc<Mutex<Connection>>) -> String{
 
     for i in parents{
 
+        let username = match &i.username{
+            Some(i) => i,
+            _ => "",
+        };
+
 
         let mut cur = 
-            comment_template.replace("{{USERNAME}}", &format!("{} - Zeth", i.user_id))
+            comment_template.replace("{{USERNAME}}", &username)
             .replace("{{DATE_POSTED}}", &i.date.to_string())
             .replace("{{COMMENT}}", &i.body)
             .replace("{{POST_ID}}", &i.post_id.to_string())

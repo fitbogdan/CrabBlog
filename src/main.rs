@@ -22,8 +22,38 @@ fn main(){
     run_server();
 }
 
-pub fn render_home_page(home_loc: &str, post_card_loc: &str, items: Vec<PostCard>) -> String{
+pub fn render_home_page(home_loc: &str, post_card_loc: &str, items: Vec<PostCard>, user_id: Option<u32>) -> String{
     // println!("Rendering home page, with {} posts", items.len());
+
+    let auth_html = match user_id{
+        Some(_) => {
+            r#"
+                <form method="post" action="/logout">
+                    <button type="submit" class="font-display text-lg text-ink truncate hover:text-green-400 hover:underline bg-transparent border-none p-0 cursor-pointer">
+                        Logout
+                    </button>
+                </form>
+            "#
+        },
+        _ => {
+
+            r#"
+                <a href="/login" class="font-display  text-lg text-ink truncate hover:text-green-400 hover:underline">
+                    Log-In 
+                </a>
+
+
+                <p class="font-display text-lg text-ink truncate opacity-50">
+                / 
+                </p>
+
+                <a href="/register" class="font-display  text-lg text-ink truncate hover:text-green-400 hover:underline">
+                    Register 
+                </a>
+            "#
+        }
+    };
+
 
     let mut final_post_html: String = "".to_string();
 
@@ -35,7 +65,7 @@ pub fn render_home_page(home_loc: &str, post_card_loc: &str, items: Vec<PostCard
         post_html = post_html.replace("{{POST_DESCRIPTION}}", &items[i].description);
         post_html = post_html.replace("{{POST_IMAGE_URL}}", "/image");
         post_html = post_html.replace("{{POST_ID}}", &format!("/post/{}", &items[i].id));
-
+        
         final_post_html = final_post_html + &post_html;
     }
 
@@ -44,7 +74,7 @@ pub fn render_home_page(home_loc: &str, post_card_loc: &str, items: Vec<PostCard
 
     let mut rb = std::fs::read_to_string(home_loc).unwrap();
     rb = rb.replace("{{POSTS}}", &final_post_html);
-
+    rb = rb.replace("{{AUTH_BUTTONS}}", auth_html);
     rb
 }
 
@@ -134,7 +164,7 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>){
 
 
     let mut user_id: Option<u32> = None;
-    user_id = match token{
+    user_id = match &token{
         Some(token) => {
             let conn = db.lock().unwrap();
 
@@ -159,11 +189,11 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>){
     let segments: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
     // println!("Got path: {}, and method: {}", path, method);
 
-
+    let cookie_duration = db_service::SESSION_SECONDS;
 
 
     match (method.as_str(), segments.as_slice()){
-        ("GET", []) => send_home(&mut stream),
+        ("GET", []) => send_home(&mut stream, user_id),
         ("GET", ["image"]) => send_image(&mut stream, "static/zeth.jpg"),
         ("GET", ["post", id])  => {
             match id.parse::<u32>() {
@@ -207,7 +237,7 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>){
             } //Scope conn so it releases the lock
 
             match cookie{
-                Some(c) => send_response(&mut stream, 302, "text/html", "", Some(&format!("Set-Cookie: token={}; Path=/; HttpOnly\r\nLocation: /", c))),
+                Some(c) => send_response(&mut stream, 302, "text/html", "", Some(&format!("Set-Cookie: token={}; Max-Age={}; Path=/; HttpOnly\r\nLocation: /", c, cookie_duration))),
                 None => send_404(&mut stream),
             };
         },
@@ -225,7 +255,7 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>){
             }
 
             match cookie{
-                Some(c) => send_response(&mut stream, 302, "text/html", "", Some(&format!("Set-Cookie: token={}; Path=/; HttpOnly\r\nLocation: /", c))),
+                Some(c) => send_response(&mut stream, 302, "text/html", "", Some(&format!("Set-Cookie: token={}; Max-Age={}; Path=/; HttpOnly\r\nLocation: /", c, cookie_duration))),
                 None => send_404(&mut stream),
             }
 
@@ -243,7 +273,17 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>){
 
             send_response(&mut stream, 200, "text/html", &register_html, None);
 
-        }
+        },
+
+        ("POST", ["logout"]) => {
+            let conn = db.lock().unwrap();
+            if let Some(t) = token{
+                db_service::logout_user(&conn, &t);
+            }
+            send_response(&mut stream, 302, "text/html", "", 
+                Some("Set-Cookie: token=; Max-Age=0; Path=/; HttpOnly\r\nLocation: /")
+            );
+        },
 
         
         _ => {

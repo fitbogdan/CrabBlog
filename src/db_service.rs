@@ -1,8 +1,10 @@
 use rusqlite::{Connection,params};
 use crate::datatypes::Comment;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use crate::common::{decode_body,encode_html};
 
+pub const SESSION_DAYS: i64 = 30;
+pub const SESSION_SECONDS: u64 = SESSION_DAYS as u64 * 86400;
 
 
 pub fn create_db() -> Connection{
@@ -28,7 +30,8 @@ pub fn create_db() -> Connection{
             CREATE TABLE IF NOT EXISTS sessions(
                 token TEXT NOT NULL PRIMARY KEY,
                 user_id INTEGER NOT NULL,
-                created_at TEXT NOT NULL
+                created_at TEXT NOT NULL,
+                expires_at TEXT NOT NULL
             );" 
     ).unwrap();
 
@@ -40,7 +43,10 @@ pub fn get_comment(conn: &Connection, post_id: u32) -> Vec<Comment>{
     //Example: "<" will be returned as &lt; Etc..
 
     let mut stmt = conn.prepare(
-        "SELECT id, post_id, parent_id, user_id, body, date FROM comments WHERE post_id = ?1"
+        "SELECT c.id, c.post_id, c.parent_id, c.user_id, c.body, c.date, u.username 
+        FROM comments c
+        JOIN users u ON u.id = c.user_id
+        WHERE c.post_id = ?1"
     ).unwrap();
 
     let rows = stmt.query_map([post_id], |row|{
@@ -50,6 +56,7 @@ pub fn get_comment(conn: &Connection, post_id: u32) -> Vec<Comment>{
 
 
         let body_encoded = encode_html(&body_raw);
+        let username_raw: String = row.get(6).unwrap();
 
         // let body_decoded = decode_body(&body_raw);
 
@@ -60,6 +67,7 @@ pub fn get_comment(conn: &Connection, post_id: u32) -> Vec<Comment>{
             user_id: row.get(3).unwrap(),
             body: body_encoded,
             date: date,
+            username: Some(encode_html(&username_raw)),
         })
     }).unwrap();
 
@@ -175,9 +183,9 @@ pub fn generate_cookie(conn: &Connection, user_id: u32) -> Option<String>{
     let token = generate_token();
 
     let result = conn.execute(
-        "INSERT INTO sessions (user_id,token,created_at)
-        VALUES(?1, ?2, ?3)", 
-        params![user_id, token, Utc::now().to_rfc3339()]
+        "INSERT INTO sessions (user_id,token,created_at,expires_at)
+        VALUES(?1, ?2, ?3, ?4)", 
+        params![user_id, token, Utc::now().to_rfc3339(), (Utc::now()+Duration::days(SESSION_DAYS)).to_rfc3339()]
     );
 
     match result{
@@ -209,11 +217,14 @@ pub fn cookie_from_user(conn: &Connection, user_id: u32) -> Option<String>{
 
 pub fn user_from_cookie(conn: &Connection, cookie: &str) -> Option<u32>{
     let mut stmt = conn.prepare(
-        "SELECT user_id FROM sessions WHERE token = ?1"
+        "SELECT user_id, expires_at FROM sessions WHERE token = ?1 AND expires_at > ?2"
     ).unwrap();
 
-    let result = stmt.query_one([cookie], |r|{
+    
+
+    let result = stmt.query_one(params![cookie, Utc::now().to_rfc3339()], |r|{
         let user_id: u32 = r.get(0).unwrap();
+
         Ok(user_id)
     });
 
