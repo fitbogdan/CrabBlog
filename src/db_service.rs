@@ -120,6 +120,22 @@ pub fn log_in(username: &str, password: &str, conn: &Connection) -> Option<Strin
         return None;
     }
 
+    //Let it silently execute. If it fails, no panic since its not crucial to logging in.
+    let _ = conn.execute(
+        "DELETE FROM sessions WHERE expires_at < ?1",
+        params![Utc::now().to_rfc3339()] 
+    );
+    
+
+    /*
+        TODO!!!!!!!!!!
+
+        BUG: User can spam create new tokens on every login.
+
+        We will rate limit each IP, but we will also have to cap 5 sessions PER user.
+    
+     */
+
 
     //We have a match
     let cookie = generate_cookie(conn, user_id);
