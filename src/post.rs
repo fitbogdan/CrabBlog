@@ -58,9 +58,13 @@ pub fn render_comments(post_id: u32, db: Arc<Mutex<Connection>>) -> String{
 
         if let Some(subs) = subcomments.get(&i.id){
             for s in subs{
+                let username = match &s.username{
+                    Some(u) => u,
+                    _ => "",
+                };
 
                 let cur_subcomment = 
-                    subcomment_template.replace("{{USER_ID}}", &s.user_id.to_string())
+                    subcomment_template.replace("{{USERNAME}}", username)
                                        .replace("{{DATE}}", &s.date.to_string())
                                        .replace("{{BODY}}", &s.body.to_string());
 
