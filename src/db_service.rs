@@ -226,5 +226,12 @@ pub fn user_from_cookie(conn: &Connection, cookie: &str) -> Option<u32>{
     id
 }
 
+pub fn logout_user(conn: &Connection, token: &str){
+    conn.execute(
+        "DELETE FROM sessions WHERE token = ?1",
+        params![token]
+    ).unwrap();
+}
+
 
 
