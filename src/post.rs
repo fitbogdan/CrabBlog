@@ -10,16 +10,17 @@ use std::collections::{HashMap};
 use std::sync::{Arc, Mutex};
 
 
-pub fn render_comments(post_id: u32, db: &Arc<Mutex<Connection>>) -> String{
+pub fn render_comments(post_id: u32, db: &Arc<Mutex<Connection>>) -> (String, usize){
     let comments = {
         let conn = get_con(db);
         get_comment(&conn, post_id)
     };
 
     if comments.is_empty() {
-        return "".to_string();
+        return ("".to_string(), 0);
     }
 
+    let comments_length: usize = comments.len();
 
     let comment_template = std::fs::read_to_string(common::COMMENT_HTML).unwrap();
     let subcomment_template = std::fs::read_to_string(common::SUBCOMMENT_HTML).unwrap();
@@ -85,7 +86,7 @@ pub fn render_comments(post_id: u32, db: &Arc<Mutex<Connection>>) -> String{
         comment_body.push_str(&cur);
     } 
 
-    comment_body
+    (comment_body, comments_length)
 
 }
 
@@ -118,15 +119,16 @@ pub fn send_post(stream: &mut TcpStream, id: u32, db: &Arc<Mutex<Connection>>, u
         Some(p) => {
             
 
-            let comments = render_comments(p.id,db);
+            let (comments_html, comment_count) = render_comments(p.id,db);
             
 
             rb.replace("{{POST_TITLE}}", &p.title)
             .replace("{{COMMENT_BOX}}", &comment_box)
+            .replace("{{NR_COMMENTS}}", &comment_count.to_string())
             .replace("{{POST_ID}}", &p.id.to_string())
             .replace("{{POST_DATE}}", &p.date)
             .replace("{{POST_TEXT}}", &get_post_text(id))
-            .replace("{{COMMENTS}}", &comments)
+            .replace("{{COMMENTS}}", &comments_html)
             .replace("{{AUTH_BUTTONS}}", auth_html)
         },
         None => "<h1> 404 Not found </h1>".to_string(),
