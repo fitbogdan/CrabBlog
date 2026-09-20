@@ -188,7 +188,14 @@ pub fn handle_login(stream: &mut TcpStream, body: &str, db: &Arc<Mutex<Connectio
 
     match cookie{
         Some(c) => send_response(stream, 302, "text/html", "", Some(&format!("Set-Cookie: token={}; Max-Age={}; Path=/; HttpOnly\r\nLocation: /", c, cookie_duration))),
-        None => send_response(stream, 401, "text/html", "<h1>Log in failed! Check password/username.</h1>", None),
+        None => {
+
+
+            let mut login_html = std::fs::read_to_string("static/login.html").unwrap();
+            login_html = login_html.replace("{{ERROR}}", "*Error! Wrong Password/Username*");
+            send_response(stream, 401, "text/html", &login_html, None);
+            // send_response(stream, 401, "text/html", "<h1>Log in failed! Check password/username.</h1>", None)
+        }
     };
 }
 
@@ -218,8 +225,20 @@ pub fn handle_register(stream: &mut TcpStream, body: &str, db: &Arc<Mutex<Connec
 
     match result{
         Success(s) => send_response(stream, 302, "text/html", "", Some(&format!("Set-Cookie: token={}; Max-Age={}; Path=/; HttpOnly\r\nLocation: /", s, cookie_duration))),
-        UsernameTaken => send_response(stream, 409, "text/html", "<h1> Username Taken! </h1>", None),
-        ServerError => send_response(stream, 500, "text/html", "<h1> Something went wrong and we are fixing it. You can read a book now and try again later! </h1>", None),
+        UsernameTaken => {
+
+            let mut register_html = std::fs::read_to_string("static/register.html").unwrap();
+            register_html = register_html.replace("{{ERROR}}", "*Username is Taken!*");
+
+            send_response(stream, 409, "text/html", &register_html, None);
+        }
+
+        ServerError => {
+            let mut register_html = std::fs::read_to_string("static/register.html").unwrap();
+            register_html = register_html.replace("{{ERROR}}", "*Error: Server Issues*");
+
+            send_response(stream, 500, "text/html", &register_html, None);
+        }
     }
 
 }

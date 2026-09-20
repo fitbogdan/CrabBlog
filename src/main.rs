@@ -244,14 +244,15 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
 
         ("GET", ["login"]) => {
             // Render login page
-            let login_html = std::fs::read_to_string("static/login.html").unwrap();
+            let mut login_html = std::fs::read_to_string("static/login.html").unwrap();
+            login_html = login_html.replace("{{ERROR}}", "");
             send_response(&mut stream, 200, "text/html", &login_html, None);
 
         },
 
         ("GET", ["register"]) => {
-            let register_html = std::fs::read_to_string("static/register.html").unwrap();
-
+            let mut register_html = std::fs::read_to_string("static/register.html").unwrap();
+            register_html = register_html.replace("{{ERROR}}", "");
             send_response(&mut stream, 200, "text/html", &register_html, None);
 
         },
