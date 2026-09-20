@@ -17,9 +17,8 @@ use rusqlite::Connection;
 
 use crate::handlers::{get_con, handle_login, handle_register, handle_reply, send_css, send_home, send_image};
 use crate::http::{get_cookie, send_404,send_response};
-use crate::datatypes::{Attempts, PostCard};
+use crate::datatypes::{Attempts};
 use crate::post::send_post;
-use crate::common::{auth_bar_html};
 
 
 
@@ -28,33 +27,6 @@ fn main(){
     run_server();
 }
 
-pub fn render_home_page(home_loc: &str, items: Vec<PostCard>, user_id: Option<u32>) -> String{
-    // println!("Rendering home page, with {} posts", items.len());
-
-    let auth_html = auth_bar_html(user_id);
-
-    let mut final_post_html: String = "".to_string();
-
-    for i in 0..items.len(){
-        let mut post_html = std::fs::read_to_string(common::POST_CARD).unwrap();
-
-        post_html = post_html.replace("{{POST_DATE}}", &items[i].date);
-        post_html = post_html.replace("{{POST_TITLE}}", &items[i].title);
-        post_html = post_html.replace("{{POST_DESCRIPTION}}", &items[i].description);
-        post_html = post_html.replace("{{POST_IMAGE_URL}}", "/image");
-        post_html = post_html.replace("{{POST_ID}}", &format!("/post/{}", &items[i].id));
-        
-        final_post_html = final_post_html + &post_html;
-    }
-
-
-
-
-    let mut rb = std::fs::read_to_string(home_loc).unwrap();
-    rb = rb.replace("{{POSTS}}", &final_post_html);
-    rb = rb.replace("{{AUTH_BUTTONS}}", auth_html);
-    rb
-}
 
 
 
