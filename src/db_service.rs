@@ -1,6 +1,6 @@
 use rusqlite::{Connection,params};
 use crate::datatypes::RegisterResult::{ServerError, UsernameTaken};
-use crate::{datatypes::Comment, http::send_response};
+use crate::{datatypes::Comment};
 use chrono::{DateTime, Duration, Utc};
 use crate::common::{decode_body,encode_html};
 use crate::datatypes::{RegisterResult};
