@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::net::TcpStream;
 use std::time::Instant;
+use crate::datatypes::RegisterResult::{ServerError, Success, UsernameTaken};
 use crate::render_home_page;
 use crate::http::{send_response,send_404};
 use crate::db_service::{send_comment};
@@ -152,10 +153,6 @@ pub fn handle_rate_limiting(stream: &mut TcpStream, attempts: &Attempts, ip_pref
     list.retain(|t| t.elapsed().as_secs() < rate_limit_window_secs);
 
     if list.len() >= rate_max_limit_attempts{
-
-        /*
-            TODO: Send 429, TOO MANY REQUESTS. 
-        */
         return false
     }
 
@@ -171,6 +168,9 @@ pub fn handle_login(stream: &mut TcpStream, body: &str, db: &Arc<Mutex<Connectio
     const RATE_MAX_LIMIT_ATTEMPTS: usize = 5;
 
     if !handle_rate_limiting(stream, attempts, "login", RATE_LIMIT_WINDOW_SECS, RATE_MAX_LIMIT_ATTEMPTS){
+
+        send_response(stream, 429, "text/html", "<h1>You are logging in too much</h1>", None);
+
         return
     }
 
@@ -179,18 +179,16 @@ pub fn handle_login(stream: &mut TcpStream, body: &str, db: &Arc<Mutex<Connectio
     let username = decode_body_field(body, "username");
     let password = decode_body_field(body, "password");
 
-    let mut cookie: Option<String> = None;
-
-    {
+    let cookie = {
 
         let conn = get_con(db);
-        cookie = db_service::log_in(&username, &password, &conn);
+        db_service::log_in(&username, &password, &conn)
 
-    } //Scope conn so it releases the lock
+    }; //Scope conn so it releases the lock
 
     match cookie{
         Some(c) => send_response(stream, 302, "text/html", "", Some(&format!("Set-Cookie: token={}; Max-Age={}; Path=/; HttpOnly\r\nLocation: /", c, cookie_duration))),
-        None => send_404(stream),
+        None => send_response(stream, 401, "text/html", "<h1>Log in failed! Check password/username.</h1>", None),
     };
 }
 
@@ -203,6 +201,7 @@ pub fn handle_register(stream: &mut TcpStream, body: &str, db: &Arc<Mutex<Connec
     const RATE_MAX_LIMIT_ATTEMPTS: usize = 3;
 
     if !handle_rate_limiting(stream, attempts, "register", RATE_LIMIT_WINDOW_SECS, RATE_MAX_LIMIT_ATTEMPTS){
+        send_response(stream, 429, "text/html", "<h1>You are making too many accounts</h1>", None);
         return;
     }
 
@@ -210,15 +209,17 @@ pub fn handle_register(stream: &mut TcpStream, body: &str, db: &Arc<Mutex<Connec
     let username = decode_body_field(body, "username");
     let password = decode_body_field(body, "password");
 
-    let mut cookie: Option<String> = None;
-
-    {
+    let result =  {
         let conn = get_con(&db);
-        cookie = db_service::create_user(&conn, &username, &password);
+        db_service::create_user(&conn, &username, &password)
+    };
+
+
+
+    match result{
+        Success(s) => send_response(stream, 302, "text/html", "", Some(&format!("Set-Cookie: token={}; Max-Age={}; Path=/; HttpOnly\r\nLocation: /", s, cookie_duration))),
+        UsernameTaken => send_response(stream, 409, "text/html", "<h1> Username Taken! </h1>", None),
+        ServerError => send_response(stream, 500, "text/html", "<h1> Something went wrong and we are fixing it. You can read a book now and try again later! </h1>", None),
     }
 
-    match cookie{
-        Some(c) => send_response(stream, 302, "text/html", "", Some(&format!("Set-Cookie: token={}; Max-Age={}; Path=/; HttpOnly\r\nLocation: /", c, cookie_duration))),
-        None => send_404(stream),
-    }
 }

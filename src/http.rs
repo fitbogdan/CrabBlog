@@ -9,8 +9,12 @@ pub fn send_response(stream: &mut TcpStream, status: u32, content_type: &str, bo
     let reason = match status {
         200 => "OK",
         302 => "Found",
-        400 => "Bad Request" ,
+        400 => "Bad Request",
+        401 => "Unauthorized",
+        403 => "Forbidden",
         404 => "Not Found",
+        409 => "Conflict",
+        429 => "Too Many Requests",
         500 => "Internal Server Error",
         _ => "Unknown",
     };

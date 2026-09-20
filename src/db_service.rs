@@ -1,7 +1,11 @@
 use rusqlite::{Connection,params};
-use crate::datatypes::Comment;
+use crate::datatypes::RegisterResult::{ServerError, UsernameTaken};
+use crate::{datatypes::Comment, http::send_response};
 use chrono::{DateTime, Duration, Utc};
 use crate::common::{decode_body,encode_html};
+use crate::datatypes::{RegisterResult};
+
+
 
 pub const SESSION_DAYS: i64 = 30;
 pub const SESSION_SECONDS: u64 = SESSION_DAYS as u64 * 86400;
@@ -143,7 +147,7 @@ pub fn log_in(username: &str, password: &str, conn: &Connection) -> Option<Strin
     return cookie;
 }
 
-pub fn create_user(conn: &Connection, username: &str, password: &str) -> Option<String>{
+pub fn create_user(conn: &Connection, username: &str, password: &str) -> RegisterResult{
     //1: Check if already exists
         //If yes => Redirect
 
@@ -154,7 +158,7 @@ pub fn create_user(conn: &Connection, username: &str, password: &str) -> Option<
     let res = bcrypt::hash(password, 12);
     let password_hash = match res {
         Ok(t) => t,
-        Err(_) => return None
+        Err(_) => return ServerError
     };
 
 
@@ -167,13 +171,20 @@ pub fn create_user(conn: &Connection, username: &str, password: &str) -> Option<
     );
     match res{
         Ok(_) => {}, //Was able to insert
-        Err(_) => return None // Duplicate
+        Err(_) =>{
+            return UsernameTaken
+        }  // Duplicate
     }
 
 
     let user_id = conn.last_insert_rowid() as u32;
 
-    generate_cookie(conn, user_id)
+    let result = match generate_cookie(conn, user_id){
+        Some(r) => RegisterResult::Success(r),
+        None => RegisterResult::ServerError
+    };
+
+    result
 }
 
 
