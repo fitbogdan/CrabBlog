@@ -28,7 +28,7 @@ fn main(){
     run_server();
 }
 
-pub fn render_home_page(home_loc: &str, post_card_loc: &str, items: Vec<PostCard>, user_id: Option<u32>) -> String{
+pub fn render_home_page(home_loc: &str, items: Vec<PostCard>, user_id: Option<u32>) -> String{
     // println!("Rendering home page, with {} posts", items.len());
 
     let auth_html = auth_bar_html(user_id);
@@ -36,7 +36,7 @@ pub fn render_home_page(home_loc: &str, post_card_loc: &str, items: Vec<PostCard
     let mut final_post_html: String = "".to_string();
 
     for i in 0..items.len(){
-        let mut post_html = std::fs::read_to_string(post_card_loc).unwrap();
+        let mut post_html = std::fs::read_to_string(common::POST_CARD).unwrap();
 
         post_html = post_html.replace("{{POST_DATE}}", &items[i].date);
         post_html = post_html.replace("{{POST_TITLE}}", &items[i].title);
@@ -150,8 +150,7 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
     let token = get_cookie(&request, "token");
 
 
-    let mut user_id: Option<u32> = None;
-    user_id = match &token{
+    let user_id: Option<u32> = match &token{
         Some(token) => {
             let conn = get_con(&db);
 

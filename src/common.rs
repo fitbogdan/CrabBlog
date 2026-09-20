@@ -2,6 +2,10 @@ use crate::datatypes::{PostCard};
 
 pub const AUTH_COMMENT_BOX: &str = "static/components/auth_comment_box.html";
 pub const GUEST_COMMENT_BOX: &str = "static/components/guest_comment_box.html";
+pub const COMMENT_HTML: &str = "static/components/comment.html";
+pub const POST_CARD: &str = "static/components/post_card.html";
+pub const SUBCOMMENT_HTML: &str = "static/components/subcomment.html";
+
 
 
 

@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::net::TcpStream;
 use std::time::Instant;
 use crate::datatypes::RegisterResult::{ServerError, Success, UsernameTaken};
@@ -75,7 +74,7 @@ pub fn handle_reply(stream: &mut TcpStream, post_id: &str, parent_id: Option<&st
 pub fn send_home(stream: &mut TcpStream, user_id: Option<u32>){
 
 
-    let rb = render_home_page("static/home.html", "static/post_card.html", items(), user_id);
+    let rb = render_home_page("static/home.html", items(), user_id);
     let response = format!(
         "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}",
         rb.len(),

@@ -10,7 +10,7 @@ use std::collections::{HashMap};
 use std::sync::{Arc, Mutex};
 
 
-pub fn render_comments(post_id: u32, db: &Arc<Mutex<Connection>>, user_id: Option<u32>) -> String{
+pub fn render_comments(post_id: u32, db: &Arc<Mutex<Connection>>) -> String{
     let comments = {
         let conn = get_con(db);
         get_comment(&conn, post_id)
@@ -21,8 +21,8 @@ pub fn render_comments(post_id: u32, db: &Arc<Mutex<Connection>>, user_id: Optio
     }
 
 
-    let comment_template = std::fs::read_to_string("static/comment.html").unwrap();
-    let subcomment_template = std::fs::read_to_string("static/subcomment.html").unwrap();
+    let comment_template = std::fs::read_to_string(common::COMMENT_HTML).unwrap();
+    let subcomment_template = std::fs::read_to_string(common::SUBCOMMENT_HTML).unwrap();
     let mut comment_body = String::new();
 
     let mut subcomments: HashMap<u32, Vec<Comment>> = HashMap::new();
@@ -118,7 +118,7 @@ pub fn send_post(stream: &mut TcpStream, id: u32, db: &Arc<Mutex<Connection>>, u
         Some(p) => {
             
 
-            let comments = render_comments(p.id,db,user_id);
+            let comments = render_comments(p.id,db);
             
 
             rb.replace("{{POST_TITLE}}", &p.title)
