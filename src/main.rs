@@ -1,7 +1,10 @@
+use std::collections::HashMap;
+// use std::hash::Hash;
 use std::net::{TcpListener, TcpStream};
 use std::io::{Read};
 use std::sync::{Arc, Mutex};
 use std::thread;
+use std::time::{Duration, Instant};
 pub mod post;
 pub mod datatypes;
 pub mod common;
@@ -12,11 +15,14 @@ use chrono::{Utc};
 use rusqlite::Connection;
 
 
-use crate::handlers::{handle_reply,send_home,send_css,send_image};
+use crate::handlers::{get_con, handle_login, handle_register, handle_reply, send_css, send_home, send_image};
 use crate::http::{get_cookie, send_404,send_response};
-use crate::common::{decode_body_field};
-use crate::datatypes::{PostCard};
+use crate::datatypes::{Attempts, PostCard};
 use crate::post::send_post;
+
+
+
+
 
 fn main(){
     run_server();
@@ -97,7 +103,10 @@ pub fn get_body(request: &str) -> &str{
 pub fn read_request_bytes(stream: &mut TcpStream) -> Option<Vec<u8>>{
     let mut buffer:[u8; 1024] = [0; 1024];
 
-    let mut n = stream.read(&mut buffer).unwrap();
+    let mut n = match stream.read(&mut buffer){
+        Ok(n)  => n,
+        Err(_) => return None,
+    };
     let mut data: Vec<u8> = Vec::new();
     let mut header_end = 0;
     while n > 0{
@@ -108,7 +117,10 @@ pub fn read_request_bytes(stream: &mut TcpStream) -> Option<Vec<u8>>{
             break;
         }
 
-        n = stream.read(&mut buffer).unwrap();
+        n = match stream.read(&mut buffer){
+            Ok(n)  => n,
+            Err(_) => return None,
+        };
     }
 
 
@@ -135,7 +147,10 @@ pub fn read_request_bytes(stream: &mut TcpStream) -> Option<Vec<u8>>{
 
     if let Some(l) = content_length{
         while data.len() < l + header_end + 4{
-            n = stream.read(&mut buffer).unwrap();
+            n = match stream.read(&mut buffer){
+                Ok(n)  => n,
+                Err(_) => return None,
+            };
 
             if n == 0{
                 break;
@@ -150,7 +165,7 @@ pub fn read_request_bytes(stream: &mut TcpStream) -> Option<Vec<u8>>{
     Some(data) 
 }
 
-pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>){
+pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, attempts: Arc<Mutex<HashMap<String, Vec<Instant>>>>){
 
     let request_bytes = match read_request_bytes(&mut stream){
         Some(r) => r,
@@ -166,7 +181,7 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>){
     let mut user_id: Option<u32> = None;
     user_id = match &token{
         Some(token) => {
-            let conn = db.lock().unwrap();
+            let conn = get_con(&db);
 
 
             db_service::user_from_cookie(&conn, &token)
@@ -197,7 +212,7 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>){
         ("GET", ["image"]) => send_image(&mut stream, "static/zeth.jpg"),
         ("GET", ["post", id])  => {
             match id.parse::<u32>() {
-                Ok(post_id) => send_post(&mut stream, post_id, db),
+                Ok(post_id) => send_post(&mut stream, post_id, &db),
                 Err(_) => send_404(&mut stream),
             }
         },
@@ -221,44 +236,10 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>){
         }
         
         ("POST", ["login"]) => {
-
-            // send_response(&mut stream, 302, "text/html", "", Some("Set-Cookie: user_id=69; Path=/; HttpOnly\r\nLocation: /"));
-
-            let username = decode_body_field(body, "username");
-            let password = decode_body_field(body, "password");
-
-            let mut cookie: Option<String> = None;
-
-            {
-
-                let conn = db.lock().unwrap();
-                cookie = db_service::log_in(&username, &password, &conn);
-
-            } //Scope conn so it releases the lock
-
-            match cookie{
-                Some(c) => send_response(&mut stream, 302, "text/html", "", Some(&format!("Set-Cookie: token={}; Max-Age={}; Path=/; HttpOnly\r\nLocation: /", c, cookie_duration))),
-                None => send_404(&mut stream),
-            };
+            handle_login(&mut stream, body, &db, cookie_duration, &attempts);
         },
         ("POST", ["register"]) => {
-
-            
-            let username = decode_body_field(body, "username");
-            let password = decode_body_field(body, "password");
-
-            let mut cookie: Option<String> = None;
-
-            {
-                let conn = db.lock().unwrap();
-                cookie = db_service::create_user(&conn, &username, &password);
-            }
-
-            match cookie{
-                Some(c) => send_response(&mut stream, 302, "text/html", "", Some(&format!("Set-Cookie: token={}; Max-Age={}; Path=/; HttpOnly\r\nLocation: /", c, cookie_duration))),
-                None => send_404(&mut stream),
-            }
-
+            handle_register(&mut stream, body, &db, cookie_duration, &attempts);            
         },
 
         ("GET", ["login"]) => {
@@ -276,7 +257,7 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>){
         },
 
         ("POST", ["logout"]) => {
-            let conn = db.lock().unwrap();
+            let conn = get_con(&db);
             if let Some(t) = token{
                 db_service::logout_user(&conn, &t);
             }
@@ -284,6 +265,12 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>){
                 Some("Set-Cookie: token=; Max-Age=0; Path=/; HttpOnly\r\nLocation: /")
             );
         },
+
+        // ("GET", ["boom"]) =>{
+        //     let con = get_con(&db);
+        //     // let con = db.lock().unwrap();
+        //     panic!("Bubuie!");
+        // }
 
         
         _ => {
@@ -300,20 +287,22 @@ pub fn run_server(){
     let concurrency = true;
     let conn = db_service::create_db();
     let db = Arc::new(Mutex::new(conn));
+    let attempts: Arc<Mutex<HashMap<String, Vec<Instant>>>> = Arc::new(Mutex::new(HashMap::new()));
 
     for stream in listener.incoming(){
 
         match stream {
             Ok(stream) => {
+                stream.set_read_timeout(Some(Duration::from_secs(10))).unwrap();
                 if concurrency == true {
                     let db = Arc::clone(&db);
-
+                    let attempts = Arc::clone(&attempts);
                     thread::spawn(move ||{
-                        handle_connection(stream,db);
+                        handle_connection(stream,db,attempts);
                     });
                 }
                 else{
-                    handle_connection(stream,Arc::clone(&db));
+                    handle_connection(stream,Arc::clone(&db), Arc::clone(&attempts));
                 }
             },
             Err(e) => eprintln!("Connection failed! {}", e)

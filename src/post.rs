@@ -4,14 +4,15 @@ use crate::datatypes::{PostCard,Comment};
 use crate::common::{items};
 use crate::http::{send_response};
 use crate::db_service::get_comment;
+use crate::handlers::{get_con};
 use std::net::{TcpStream};
 use std::collections::{HashMap};
 use std::sync::{Arc, Mutex};
 
 
-pub fn render_comments(post_id: u32, db: Arc<Mutex<Connection>>) -> String{
+pub fn render_comments(post_id: u32, db: &Arc<Mutex<Connection>>) -> String{
     let comments = {
-        let conn = db.lock().unwrap();
+        let conn = get_con(db);
         get_comment(&conn, post_id)
     };
 
@@ -92,7 +93,7 @@ pub fn get_post_text(id: u32)-> String{
 }
 
 
-pub fn send_post(stream: &mut TcpStream, id: u32, db: Arc<Mutex<Connection>>){
+pub fn send_post(stream: &mut TcpStream, id: u32, db: &Arc<Mutex<Connection>>){
     let items = items();
 
     let mut post: Option<&PostCard> = None;

@@ -1,6 +1,8 @@
+use std::{collections::HashMap, sync::{Arc, Mutex}, time::Instant};
+
 use chrono::{DateTime, Utc};
 
-
+pub type Attempts = Arc<Mutex<HashMap<String, Vec<Instant>>>>;
 pub struct PostCard{
     pub title: String,
     pub description: String,

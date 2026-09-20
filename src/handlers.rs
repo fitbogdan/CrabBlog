@@ -1,13 +1,29 @@
+use std::collections::HashMap;
 use std::net::TcpStream;
+use std::time::Instant;
 use crate::render_home_page;
 use crate::http::{send_response,send_404};
 use crate::db_service::{send_comment};
-use crate::datatypes::{Comment};
+use crate::datatypes::{Comment, Attempts};
 use crate::common::{items};
 use chrono::{DateTime, Utc};
 use std::io::{Write};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 use rusqlite::Connection;
+use crate::common::{decode_body_field};
+use crate::db_service;
+
+
+
+
+pub fn get_con(db: &Arc<Mutex<Connection>>) -> MutexGuard<'_, Connection>{
+    let con = match db.lock(){
+        Ok(c) => c,
+        Err(poisoned) => poisoned.into_inner()
+    };
+
+    con
+}
 
 pub fn handle_reply(stream: &mut TcpStream, post_id: &str, parent_id: Option<&str>, body: &str, user_id: Option<u32>, date: DateTime<Utc>, db: &Arc<Mutex<Connection>>){
     
@@ -44,8 +60,8 @@ pub fn handle_reply(stream: &mut TcpStream, post_id: &str, parent_id: Option<&st
 
 
     {
-    let conn = db.lock().unwrap();
-    send_comment(&conn, &comment);
+        let conn = get_con(&db);
+        send_comment(&conn, &comment);
     } //Scope conn so it releases the lock
 
 
@@ -108,4 +124,101 @@ pub fn send_image(stream: &mut TcpStream, file_path: &str){
     stream.write_all(headers.as_bytes()).unwrap();
     stream.write_all(&bytes).unwrap();
 
+}
+
+pub fn handle_rate_limiting(stream: &mut TcpStream, attempts: &Attempts, ip_prefix: &str,
+                            rate_limit_window_secs: u64, rate_max_limit_attempts: usize) -> bool{
+    
+    
+
+    let ip = match stream.peer_addr(){
+        Ok(i) => {
+            // print!("PEER ADDR !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! -> \n{}\n\n\n\n",i);
+            format!("{}:{}", ip_prefix,i.ip().to_string())
+        },
+        Err(_) => return false
+    };
+
+
+    let mut map = match attempts.lock(){
+        Ok(l) => l,
+        _ => return false
+    };
+
+    let list = map.entry(ip).or_default();
+
+
+
+    list.retain(|t| t.elapsed().as_secs() < rate_limit_window_secs);
+
+    if list.len() >= rate_max_limit_attempts{
+
+        /*
+            TODO: Send 429, TOO MANY REQUESTS. 
+        */
+        return false
+    }
+
+    list.push(Instant::now());
+
+    return true
+
+}
+
+pub fn handle_login(stream: &mut TcpStream, body: &str, db: &Arc<Mutex<Connection>>, cookie_duration: u64, attempts: &Attempts){
+
+    const RATE_LIMIT_WINDOW_SECS: u64 = 900; //15 mins
+    const RATE_MAX_LIMIT_ATTEMPTS: usize = 5;
+
+    if !handle_rate_limiting(stream, attempts, "login", RATE_LIMIT_WINDOW_SECS, RATE_MAX_LIMIT_ATTEMPTS){
+        return
+    }
+
+
+
+    let username = decode_body_field(body, "username");
+    let password = decode_body_field(body, "password");
+
+    let mut cookie: Option<String> = None;
+
+    {
+
+        let conn = get_con(db);
+        cookie = db_service::log_in(&username, &password, &conn);
+
+    } //Scope conn so it releases the lock
+
+    match cookie{
+        Some(c) => send_response(stream, 302, "text/html", "", Some(&format!("Set-Cookie: token={}; Max-Age={}; Path=/; HttpOnly\r\nLocation: /", c, cookie_duration))),
+        None => send_404(stream),
+    };
+}
+
+
+
+pub fn handle_register(stream: &mut TcpStream, body: &str, db: &Arc<Mutex<Connection>>, cookie_duration: u64, attempts: &Attempts){
+
+
+    const RATE_LIMIT_WINDOW_SECS: u64 = 3600; //15 mins
+    const RATE_MAX_LIMIT_ATTEMPTS: usize = 3;
+
+    if !handle_rate_limiting(stream, attempts, "register", RATE_LIMIT_WINDOW_SECS, RATE_MAX_LIMIT_ATTEMPTS){
+        return;
+    }
+
+
+    let username = decode_body_field(body, "username");
+    let password = decode_body_field(body, "password");
+
+    let mut cookie: Option<String> = None;
+
+    {
+        let conn = get_con(&db);
+        cookie = db_service::create_user(&conn, &username, &password);
+    }
+
+    match cookie{
+        Some(c) => send_response(stream, 302, "text/html", "", Some(&format!("Set-Cookie: token={}; Max-Age={}; Path=/; HttpOnly\r\nLocation: /", c, cookie_duration))),
+        None => send_404(stream),
+    }
 }
