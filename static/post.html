@@ -8,6 +8,9 @@
 </head>
 <body class="font-sans bg-bg text-ink">
 
+    <div class="flex flex-row fixed right-15 top-10 gap-2">
+        {{AUTH_BUTTONS}}
+    </div>
     <div class="max-w-2xl mx-auto px-6">
 
         <div class="pt-10 pb-6">
@@ -43,13 +46,11 @@
 
 
 
-        <div class="pixel-card p-6 my-5">
-
+        <!-- <div class="pixel-card p-6 my-5">
             <h2 class="font-display text-2xl text-ink [text-shadow:2px_2px_0_rgba(0,0,0,0.35)]"> Add to the conversation </h2>
 
             <form method="post" action="/post/{{POST_ID}}/reply" class="flex flex-col gap-2 mt-3">
                 <textarea name="body" class="font-sans text-sm text-ink bg-bg-deep border-2 border-outline p-2 resize-none overflow-y-auto max-h-64" rows="2" placeholder="Write a reply..." oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,256)+'px'"></textarea>
-
 
                 <div class="flex justify-between items-center mt-2">
                     <p class="font-base text-xs opacity-45 leading-relaxed text-ink"> Be kind, disagree freely </p>
@@ -57,11 +58,15 @@
                     <button type="submit" class="pixel-btn self-start bg-accent text-bg-deep">post reply</button>
                 </div>
 
-
             </form>
+        </div> -->
 
+        <!-- <div class="pixel-card p-6 my-5">
+            <h2 class="font-display text-2xl text-ink [text-shadow:2px_2px_0_rgba(0,0,0,0.35)]"> You have to log in to comment! </h2>
+        </div> -->
 
-        </div>
+        {{COMMENT_BOX}}
+
     </div>
 
 </body>

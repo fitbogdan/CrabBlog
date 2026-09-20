@@ -1,5 +1,41 @@
-use crate::datatypes::{PostCard,Comment};
-use chrono::{Utc,Duration};
+use crate::datatypes::{PostCard};
+
+pub const AUTH_COMMENT_BOX: &str = "static/components/auth_comment_box.html";
+pub const GUEST_COMMENT_BOX: &str = "static/components/guest_comment_box.html";
+
+
+
+pub fn auth_bar_html(user_id: Option<u32>) -> &'static str{
+    match user_id{
+            Some(_) => {
+                r#"
+                    <form method="post" action="/logout">
+                        <button type="submit" class="font-display text-lg text-ink truncate hover:text-green-400 hover:underline bg-transparent border-none p-0 cursor-pointer">
+                            Logout
+                        </button>
+                    </form>
+                "#
+            },
+            _ => {
+
+                r#"
+                    <a href="/login" class="font-display  text-lg text-ink truncate hover:text-green-400 hover:underline">
+                        Log-In 
+                    </a>
+
+
+                    <p class="font-display text-lg text-ink truncate opacity-50">
+                    / 
+                    </p>
+
+                    <a href="/register" class="font-display  text-lg text-ink truncate hover:text-green-400 hover:underline">
+                        Register 
+                    </a>
+                "#
+            }
+    }
+}
+
 
 pub fn decode(body: &str) -> String{
 //Decodes a string from http format (Example space = +, etc...)

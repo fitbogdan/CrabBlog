@@ -1,7 +1,7 @@
 use rusqlite::Connection;
 
 use crate::datatypes::{PostCard,Comment};
-use crate::common::{items};
+use crate::common::{self, auth_bar_html, items};
 use crate::http::{send_response};
 use crate::db_service::get_comment;
 use crate::handlers::{get_con};
@@ -10,7 +10,7 @@ use std::collections::{HashMap};
 use std::sync::{Arc, Mutex};
 
 
-pub fn render_comments(post_id: u32, db: &Arc<Mutex<Connection>>) -> String{
+pub fn render_comments(post_id: u32, db: &Arc<Mutex<Connection>>, user_id: Option<u32>) -> String{
     let comments = {
         let conn = get_con(db);
         get_comment(&conn, post_id)
@@ -27,6 +27,8 @@ pub fn render_comments(post_id: u32, db: &Arc<Mutex<Connection>>) -> String{
 
     let mut subcomments: HashMap<u32, Vec<Comment>> = HashMap::new();
     let mut parents: Vec<Comment> = Vec::new();
+
+
 
 
     for i in comments{
@@ -93,7 +95,7 @@ pub fn get_post_text(id: u32)-> String{
 }
 
 
-pub fn send_post(stream: &mut TcpStream, id: u32, db: &Arc<Mutex<Connection>>){
+pub fn send_post(stream: &mut TcpStream, id: u32, db: &Arc<Mutex<Connection>>, user_id: Option<u32>){
     let items = items();
 
     let mut post: Option<&PostCard> = None;
@@ -107,18 +109,25 @@ pub fn send_post(stream: &mut TcpStream, id: u32, db: &Arc<Mutex<Connection>>){
     let mut rb = std::fs::read_to_string("static/post.html").unwrap();
 
 
+    let auth_html = auth_bar_html(user_id);
+    let comment_box = match user_id{
+        Some(_) => std::fs::read_to_string(common::AUTH_COMMENT_BOX).unwrap(),
+        None => std::fs::read_to_string(common::GUEST_COMMENT_BOX).unwrap(),
+    };
     rb = match post {
         Some(p) => {
             
 
-            let comments = render_comments(p.id,db);
+            let comments = render_comments(p.id,db,user_id);
             
 
             rb.replace("{{POST_TITLE}}", &p.title)
+            .replace("{{COMMENT_BOX}}", &comment_box)
             .replace("{{POST_ID}}", &p.id.to_string())
             .replace("{{POST_DATE}}", &p.date)
             .replace("{{POST_TEXT}}", &get_post_text(id))
             .replace("{{COMMENTS}}", &comments)
+            .replace("{{AUTH_BUTTONS}}", auth_html)
         },
         None => "<h1> 404 Not found </h1>".to_string(),
     };

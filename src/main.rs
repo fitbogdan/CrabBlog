@@ -19,7 +19,7 @@ use crate::handlers::{get_con, handle_login, handle_register, handle_reply, send
 use crate::http::{get_cookie, send_404,send_response};
 use crate::datatypes::{Attempts, PostCard};
 use crate::post::send_post;
-
+use crate::common::{auth_bar_html};
 
 
 
@@ -31,35 +31,7 @@ fn main(){
 pub fn render_home_page(home_loc: &str, post_card_loc: &str, items: Vec<PostCard>, user_id: Option<u32>) -> String{
     // println!("Rendering home page, with {} posts", items.len());
 
-    let auth_html = match user_id{
-        Some(_) => {
-            r#"
-                <form method="post" action="/logout">
-                    <button type="submit" class="font-display text-lg text-ink truncate hover:text-green-400 hover:underline bg-transparent border-none p-0 cursor-pointer">
-                        Logout
-                    </button>
-                </form>
-            "#
-        },
-        _ => {
-
-            r#"
-                <a href="/login" class="font-display  text-lg text-ink truncate hover:text-green-400 hover:underline">
-                    Log-In 
-                </a>
-
-
-                <p class="font-display text-lg text-ink truncate opacity-50">
-                / 
-                </p>
-
-                <a href="/register" class="font-display  text-lg text-ink truncate hover:text-green-400 hover:underline">
-                    Register 
-                </a>
-            "#
-        }
-    };
-
+    let auth_html = auth_bar_html(user_id);
 
     let mut final_post_html: String = "".to_string();
 
@@ -165,7 +137,7 @@ pub fn read_request_bytes(stream: &mut TcpStream) -> Option<Vec<u8>>{
     Some(data) 
 }
 
-pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, attempts: Arc<Mutex<HashMap<String, Vec<Instant>>>>){
+pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, attempts: Attempts){
 
     let request_bytes = match read_request_bytes(&mut stream){
         Some(r) => r,
@@ -212,7 +184,7 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
         ("GET", ["image"]) => send_image(&mut stream, "static/zeth.jpg"),
         ("GET", ["post", id])  => {
             match id.parse::<u32>() {
-                Ok(post_id) => send_post(&mut stream, post_id, &db),
+                Ok(post_id) => send_post(&mut stream, post_id, &db, user_id),
                 Err(_) => send_404(&mut stream),
             }
         },
