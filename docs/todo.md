@@ -1,8 +1,13 @@
 ## Major features:
-Admin accounts + Admin Console
+-> Upload pictures to the server from /write
 
 
 
+## Safety/Bugs:
+
+Devtool to easily change account status, quickly, for testing.
+
+Way later: Migrations — schema changes currently require deleting the database.
 
 
 ## Frontend polish:
@@ -27,7 +32,3 @@ Implement connection pooling instead of mutex locking (make sure to record befor
 
 
 
-
-## Safety/Bugs:
-
-    Way later: Migrations — schema changes currently require deleting the database.

@@ -1,18 +1,21 @@
-<a href="{{POST_ID}}" class="pixel-card group flex items-center gap-4 p-4 no-underline text-inherit transition-all hover:-translate-y-0.5 hover:border-accent">
-    <div class="pixel-thumb w-16 h-16 shrink-0">
-        <img src="{{POST_IMAGE_URL}}" class="w-full h-full object-cover [image-rendering:pixelated]">
-    </div>
-    <div class="min-w-0 flex-1">
-        <span class="pixel-badge inline-block mb-1.5">{{POST_DATE}}</span>
-        <p class="font-display text-lg text-ink truncate group-hover:text-accent">{{POST_TITLE}}</p>
-        <p class="font-sans text-sm text-muted truncate mt-1">{{POST_DESCRIPTION}}</p>
-
-        <div class="flex gap-2 mt-5">
-            <p class="font-sans text-sm text-muted truncate mt-1">0 replies</p>
-            <p class="font-display underline text-lg text-ink truncate hover:text-green-400">
-                read & chat →
-            </p>
+<div class="pixel-card group relative transition-all hover:-translate-y-0.5 hover:border-accent">
+    {{ADMIN_DELETE}}
+    <a href="{{POST_ID}}" class="flex items-center gap-4 p-4 no-underline text-inherit">
+        <div class="pixel-thumb w-16 h-16 shrink-0">
+            <img src="{{POST_IMAGE_URL}}" class="w-full h-full object-cover [image-rendering:pixelated]">
         </div>
+        <div class="min-w-0 flex-1">
+            <span class="pixel-badge inline-block mb-1.5">{{POST_DATE}}</span>
+            <p class="font-display text-lg text-ink truncate group-hover:text-accent">{{POST_TITLE}}</p>
+            <p class="font-sans text-sm text-muted truncate mt-1">{{POST_DESCRIPTION}}</p>
 
-    </div>
-</a>
+            <div class="flex gap-2 mt-5">
+                <p class="font-sans text-sm text-muted truncate mt-1">0 replies</p>
+                <p class="font-display underline text-lg text-ink truncate hover:text-green-400">
+                    read & chat →
+                </p>
+            </div>
+
+        </div>
+    </a>
+</div>

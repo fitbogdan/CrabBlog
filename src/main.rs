@@ -161,7 +161,7 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
         ("GET", ["image"]) => send_image(&mut stream, "static/zeth.jpg"),
         ("GET", ["post", id])  => {
             match id.parse::<u32>() {
-                Ok(post_id) => send_post(&mut stream, post_id, &db, user_id),
+                Ok(post_id) => send_post(&mut stream, post_id, &db, credentials),
                 Err(_) => send_404(&mut stream),
             }
         },
@@ -185,7 +185,10 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
         },
 
         ("POST", ["post", "create"]) => {
-            
+            if credentials.is_admin == false{
+                send_response(&mut stream, 401, "text/html", "You are not allowed to do that", None);
+                return;
+            }
 
             let headline = decode_body_field(body, "title");
             let body = decode_body_field(body, "body");
@@ -199,6 +202,39 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
 
 
         },
+
+        ("POST", ["post", post_id, "delete"]) => {
+
+
+            if credentials.is_admin == false{
+                send_response(&mut stream, 401, "text/html", "You are not allowed to do that", None);
+                return;
+            }
+
+
+            let post_id_fin = match post_id.parse::<u32>(){
+                    Ok(n) => n,
+                    Err(_) => {
+                        send_response(&mut stream, 400, "text/html", "Error, post_id wrong", None);
+                        return;
+                    }
+            };
+            {
+
+                let conn = get_con(&db);
+                db_service::delete_post(&conn, post_id_fin);
+
+            }
+
+
+            send_response(&mut stream, 302, "text/html", "", Some("Location: /"));
+
+
+
+
+
+
+        }
         
         ("POST", ["login"]) => {
             handle_login(&mut stream, body, &db, cookie_duration, &attempts);
@@ -233,6 +269,13 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
         },
 
         ("GET", ["write"]) => {
+
+            if credentials.is_admin == false{
+                send_response(&mut stream, 401, "text/html", "You are not allowed to do that", None);
+                return;
+            }
+
+
             let html = std::fs::read_to_string("static/create_post.html").unwrap();
 
             send_response(&mut stream, 200, "text/html", &html, None);

@@ -1,6 +1,6 @@
 use rusqlite::Connection;
 
-use crate::datatypes::{Comment, Post, PostCard};
+use crate::datatypes::{Comment, Credentials, Post, PostCard};
 use crate::common::{self, auth_bar_html, items};
 use crate::http::{send_response};
 use crate::db_service::{get_comment, get_post, get_posts};
@@ -96,7 +96,7 @@ pub fn get_post_text(id: u32)-> String{
 }
 
 
-pub fn send_post(stream: &mut TcpStream, id: u32, db: &Arc<Mutex<Connection>>, user_id: Option<u32>){
+pub fn send_post(stream: &mut TcpStream, id: u32, db: &Arc<Mutex<Connection>>, credentials: Credentials){
 
     let post: Option<Post> = {
         let conn = get_con(db);
@@ -106,11 +106,12 @@ pub fn send_post(stream: &mut TcpStream, id: u32, db: &Arc<Mutex<Connection>>, u
     let mut rb = std::fs::read_to_string("static/post.html").unwrap();
 
 
-    let auth_html = auth_bar_html(user_id);
-    let comment_box = match user_id{
+    let auth_html = auth_bar_html(credentials.user_id);
+    let comment_box = match credentials.user_id{
         Some(_) => std::fs::read_to_string(common::AUTH_COMMENT_BOX).unwrap(),
         None => std::fs::read_to_string(common::GUEST_COMMENT_BOX).unwrap(),
     };
+
     rb = match post {
         Some(p) => {
             

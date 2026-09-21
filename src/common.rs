@@ -5,7 +5,7 @@ pub const GUEST_COMMENT_BOX: &str = "static/components/guest_comment_box.html";
 pub const COMMENT_HTML: &str = "static/components/comment.html";
 pub const POST_CARD: &str = "static/components/post_card.html";
 pub const SUBCOMMENT_HTML: &str = "static/components/subcomment.html";
-
+pub const DELETE_POST_BUTTON: &str = "static/components/delete_post_button.html";
 
 
 

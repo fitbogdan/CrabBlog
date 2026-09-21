@@ -178,6 +178,17 @@ pub fn get_post_cards(conn: &Connection) -> Vec<PostCard>{
     rows.map(|r| r.unwrap()).collect()
 }
 
+pub fn delete_post(conn: &Connection, id: u32){
+    conn.execute(
+        "DELETE FROM comments WHERE post_id = ?1", params![id]
+    ).unwrap();
+
+    conn.execute(
+        "DELETE FROM posts WHERE id = ?1", params![id]
+    ).unwrap();
+
+}
+
 pub fn get_post(conn: &Connection, id: u32) -> Option<Post>{
 
     

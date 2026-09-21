@@ -79,6 +79,12 @@ pub fn render_home_page(home_loc: &str, items: Vec<PostCard>, credentials: Crede
 
     let mut final_post_html: String = "".to_string();
 
+    print!("\n\n\n\n{}\n\n\n\n", credentials.is_admin);
+    let delete_button = match credentials.is_admin{
+        true => std::fs::read_to_string(common::DELETE_POST_BUTTON).unwrap(),
+        false => "".to_string(),
+    };
+
     for i in 0..items.len(){
         let mut post_html = std::fs::read_to_string(common::POST_CARD).unwrap();
 
@@ -86,6 +92,7 @@ pub fn render_home_page(home_loc: &str, items: Vec<PostCard>, credentials: Crede
         post_html = post_html.replace("{{POST_TITLE}}", &items[i].title);
         post_html = post_html.replace("{{POST_DESCRIPTION}}", &items[i].description);
         post_html = post_html.replace("{{POST_IMAGE_URL}}", "/image");
+        post_html = post_html.replace("{{ADMIN_DELETE}}", &delete_button);
         post_html = post_html.replace("{{POST_ID}}", &format!("/post/{}", &items[i].id));
         
         final_post_html = final_post_html + &post_html;
@@ -98,6 +105,7 @@ pub fn render_home_page(home_loc: &str, items: Vec<PostCard>, credentials: Crede
     rb = rb.replace("{{POSTS}}", &final_post_html);
     rb = rb.replace("{{AUTH_BUTTONS}}", auth_html);
     rb = rb.replace("{{USER_TYPE}}", if credentials.is_admin == true { "ADMIN" } else {"REGULAR USER/GUEST"});
+    rb = rb.replace("{{ADMIN_PANEL}}", if credentials.is_admin == true {  r#"<a href="write">Add New Post</a>"#  } else {""});
     rb
 }
 
