@@ -168,7 +168,7 @@ pub fn get_post_cards(conn: &Connection) -> Vec<PostCard>{
             PostCard{
                 id: row.get(0).unwrap(),
                 title: row.get(1).unwrap(),
-                description: first_line,
+                description: first_line+"...",
                 date: date_str,
                 image_url: "TODO".to_string(),
             }
