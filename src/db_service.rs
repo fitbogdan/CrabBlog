@@ -156,12 +156,19 @@ pub fn get_post_cards(conn: &Connection) -> Vec<PostCard>{
         let date_str: String = row.get(3).unwrap();
         // let date = DateTime::parse_from_rfc3339(&date_str).unwrap().with_timezone(&Utc);
 
+        let body: String = row.get(2).unwrap();
+
+        let first_line = match body.lines().next(){
+            Some(line) => line.to_string(),
+            _ => String::new()
+        };
+
 
         Ok(
             PostCard{
                 id: row.get(0).unwrap(),
                 title: row.get(1).unwrap(),
-                description: row.get(2).unwrap(),
+                description: first_line,
                 date: date_str,
                 image_url: "TODO".to_string(),
             }
