@@ -15,9 +15,10 @@ use chrono::{Utc};
 use rusqlite::Connection;
 
 
+use crate::common::decode_body_field;
 use crate::handlers::{get_con, handle_login, handle_register, handle_reply, send_css, send_home, send_image};
 use crate::http::{get_cookie, send_404,send_response};
-use crate::datatypes::{Attempts};
+use crate::datatypes::{Attempts, Credentials};
 use crate::post::send_post;
 
 
@@ -122,16 +123,21 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
     let token = get_cookie(&request, "token");
 
 
-    let user_id: Option<u32> = match &token{
+    let (user_id, is_admin): (Option<u32>,bool) = match &token{
         Some(token) => {
             let conn = get_con(&db);
 
 
-            db_service::user_from_cookie(&conn, &token)
+            match db_service::user_from_cookie(&conn, &token){
+                Some((id, admin)) => (Some(id),admin),
+                None => (None,false)
+            }
         },
-
-        _=> None,
+        _=> (None,false)
     };
+
+    let credentials: Credentials = Credentials::new(user_id, is_admin);
+
 
 
     println!("Got this user: {:?}", user_id);
@@ -151,7 +157,7 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
 
 
     match (method.as_str(), segments.as_slice()){
-        ("GET", []) => send_home(&mut stream, user_id),
+        ("GET", []) => send_home(&mut stream, credentials, &db),
         ("GET", ["image"]) => send_image(&mut stream, "static/zeth.jpg"),
         ("GET", ["post", id])  => {
             match id.parse::<u32>() {
@@ -176,7 +182,23 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
 
             handle_reply(&mut stream, post_id, Some(parent_id), body, user_id, Utc::now(), &db);
         
-        }
+        },
+
+        ("POST", ["post", "create"]) => {
+            
+
+            let headline = decode_body_field(body, "title");
+            let body = decode_body_field(body, "body");
+            let post = datatypes::Post { id: 0, title: headline, body, date: Utc::now() };
+            {
+                let conn = &get_con(&db);
+                db_service::send_post(conn, &post);
+            }
+
+            send_response(&mut stream, 302, "text/html", "", Some("Location: /"));
+
+
+        },
         
         ("POST", ["login"]) => {
             handle_login(&mut stream, body, &db, cookie_duration, &attempts);
@@ -208,6 +230,13 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
             send_response(&mut stream, 302, "text/html", "", 
                 Some("Set-Cookie: token=; Max-Age=0; Path=/; HttpOnly\r\nLocation: /")
             );
+        },
+
+        ("GET", ["write"]) => {
+            let html = std::fs::read_to_string("static/create_post.html").unwrap();
+
+            send_response(&mut stream, 200, "text/html", &html, None);
+
         },
 
         // ("GET", ["boom"]) =>{

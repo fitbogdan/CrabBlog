@@ -3,7 +3,7 @@ use crate::datatypes::RegisterResult::{ServerError, UsernameTaken};
 use crate::{datatypes::Comment};
 use chrono::{DateTime, Duration, Utc};
 use crate::common::{decode_body,encode_html};
-use crate::datatypes::{RegisterResult};
+use crate::datatypes::{Post, PostCard, RegisterResult};
 
 
 
@@ -29,13 +29,20 @@ pub fn create_db() -> Connection{
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT NOT NULL UNIQUE,
                 password TEXT NOT NULL,
-                date_joined TEXT NOT NULL
+                date_joined TEXT NOT NULL,
+                is_admin BOOLEAN not NULL DEFAULT FALSE
             );
             CREATE TABLE IF NOT EXISTS sessions(
                 token TEXT NOT NULL PRIMARY KEY,
                 user_id INTEGER NOT NULL,
                 created_at TEXT NOT NULL,
                 expires_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS posts(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                body TEXT NOT NULL,
+                date TEXT NOT NULL
             );" 
     ).unwrap();
 
@@ -54,9 +61,9 @@ pub fn get_comment(conn: &Connection, post_id: u32) -> Vec<Comment>{
     ).unwrap();
 
     let rows = stmt.query_map([post_id], |row|{
-        let date_str: String = row.get(5).unwrap();
+        let date_str: String = row.get(5)?;
         let date = DateTime::parse_from_rfc3339(&date_str).unwrap().with_timezone(&Utc);
-        let body_raw: String = row.get(4).unwrap();
+        let body_raw: String = row.get(4)?;
 
 
         let body_encoded = encode_html(&body_raw);
@@ -65,10 +72,10 @@ pub fn get_comment(conn: &Connection, post_id: u32) -> Vec<Comment>{
         // let body_decoded = decode_body(&body_raw);
 
         Ok(Comment{
-            id: row.get(0).unwrap(),
-            post_id: row.get(1).unwrap(),
-            parent_id: row.get(2).unwrap(),
-            user_id: row.get(3).unwrap(),
+            id: row.get(0)?,
+            post_id: row.get(1)?,
+            parent_id: row.get(2)?,
+            user_id: row.get(3)?,
             body: body_encoded,
             date: date,
             username: Some(encode_html(&username_raw)),
@@ -95,6 +102,107 @@ pub fn send_comment(conn: &Connection, comment: &Comment){
         ]
     ).unwrap();
 }
+
+
+pub fn send_post(conn: &Connection, post: &Post){
+
+    conn.execute(
+        "INSERT INTO posts (title, body, date) VALUES (?1, ?2, ?3)",
+        params![
+            post.title,
+            post.body,
+            Utc::now().to_rfc3339()
+        ]
+    ).unwrap();
+}
+
+
+//Basically redundant, not really used:
+pub fn get_posts(conn: &Connection) -> Vec<Post>{
+
+
+    let mut stmt = conn.prepare(
+        "SELECT id, title, body, date FROM posts"
+    ).unwrap();
+
+
+    let rows = stmt.query_map([], |row| {
+
+
+        let date_str: String = row.get(3).unwrap();
+        let date = DateTime::parse_from_rfc3339(&date_str).unwrap().with_timezone(&Utc);
+
+        Ok(
+            Post{
+                id: row.get(0).unwrap(),
+                title: row.get(1).unwrap(),
+                body: row.get(2).unwrap(),
+                date: date
+            }
+        )
+    }).unwrap();
+
+    rows.map(|r| r.unwrap()).collect()
+}
+
+pub fn get_post_cards(conn: &Connection) -> Vec<PostCard>{
+
+    let mut stmt = conn.prepare(
+        "SELECT id,title,substr(body, 1, 100),date FROM posts ORDER BY date DESC"
+    ).unwrap();
+
+    let rows = stmt.query_map([], |row|{
+
+        let date_str: String = row.get(3).unwrap();
+        // let date = DateTime::parse_from_rfc3339(&date_str).unwrap().with_timezone(&Utc);
+
+
+        Ok(
+            PostCard{
+                id: row.get(0).unwrap(),
+                title: row.get(1).unwrap(),
+                description: row.get(2).unwrap(),
+                date: date_str,
+                image_url: "TODO".to_string(),
+            }
+        )
+    }).unwrap();
+
+    rows.map(|r| r.unwrap()).collect()
+}
+
+pub fn get_post(conn: &Connection, id: u32) -> Option<Post>{
+
+    
+    let mut stmt = conn.prepare(
+        "SELECT title, body, date FROM posts WHERE id = ?1"
+    ).unwrap();
+
+    let row = stmt.query_one([id], |r| {
+        let date_str: String = r.get(2).unwrap();
+        let date = DateTime::parse_from_rfc3339(&date_str).unwrap().with_timezone(&Utc);
+        Ok(
+            Post{
+                id: id,
+                title: r.get(0).unwrap(),
+                body: r.get(1).unwrap(),
+                date: date
+            }
+        )
+    });
+
+
+
+    //RETURN the value wrapped in option
+    match row{
+        Ok(r) => Some(r),
+        _ => None
+    }
+
+}
+
+
+
 
 pub fn log_in(username: &str, password: &str, conn: &Connection) -> Option<String>{
 
@@ -242,26 +350,27 @@ pub fn cookie_from_user(conn: &Connection, user_id: u32) -> Option<String>{
     cookie 
 }
 
-pub fn user_from_cookie(conn: &Connection, cookie: &str) -> Option<u32>{
+pub fn user_from_cookie(conn: &Connection, cookie: &str) -> Option<(u32,bool)> {
     let mut stmt = conn.prepare(
-        "SELECT user_id, expires_at FROM sessions WHERE token = ?1 AND expires_at > ?2"
+        "SELECT sessions.user_id, sessions.expires_at, users.is_admin 
+        FROM sessions 
+        JOIN users ON users.id = sessions.user_id
+        WHERE sessions.token = ?1 AND sessions.expires_at > ?2"
     ).unwrap();
 
     
 
     let result = stmt.query_one(params![cookie, Utc::now().to_rfc3339()], |r|{
         let user_id: u32 = r.get(0).unwrap();
-
-        Ok(user_id)
+        let is_admin: bool = r.get(2).unwrap();
+        Ok((user_id, is_admin))
     });
 
 
-    let id = match result{
+    match result{
         Ok(i) => Some(i),
         _ => None,
-    };
-
-    id
+    }
 }
 
 pub fn logout_user(conn: &Connection, token: &str){

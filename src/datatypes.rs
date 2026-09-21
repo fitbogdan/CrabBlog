@@ -33,6 +33,18 @@ impl PostCard{
     }
 }
 
+pub struct Post{
+    pub id: u32,
+    pub title: String,
+    pub body: String,
+    pub date: DateTime<Utc>,
+}
+
+impl Post{
+    pub fn new(id: u32, title: String, body: String, date: DateTime<Utc>) -> Post{
+        Post { id, title, body, date }
+    }
+}
 pub struct Comment{
     pub id: u32,
     pub post_id: u32,
@@ -85,5 +97,16 @@ pub struct Session{
 impl Session{
     pub fn new(token: String, user_id: u32, created_at: DateTime<Utc>) -> Session{
         Session { token, user_id, created_at }
+    }
+}
+
+pub struct Credentials{
+    pub user_id: Option<u32>,
+    pub is_admin: bool
+}
+
+impl Credentials{
+    pub fn new(user_id: Option<u32>, is_admin: bool) -> Credentials{
+        Credentials { user_id, is_admin }
     }
 }

@@ -1,9 +1,9 @@
 use rusqlite::Connection;
 
-use crate::datatypes::{PostCard,Comment};
+use crate::datatypes::{Comment, Post, PostCard};
 use crate::common::{self, auth_bar_html, items};
 use crate::http::{send_response};
-use crate::db_service::get_comment;
+use crate::db_service::{get_comment, get_post, get_posts};
 use crate::handlers::{get_con};
 use std::net::{TcpStream};
 use std::collections::{HashMap};
@@ -97,15 +97,11 @@ pub fn get_post_text(id: u32)-> String{
 
 
 pub fn send_post(stream: &mut TcpStream, id: u32, db: &Arc<Mutex<Connection>>, user_id: Option<u32>){
-    let items = items();
 
-    let mut post: Option<&PostCard> = None;
-    for i in items.iter(){
-        if i.id == id {
-            post = Some(i);
-            break;
-        }
-    } 
+    let post: Option<Post> = {
+        let conn = get_con(db);
+        get_post(&conn, id)
+    };
 
     let mut rb = std::fs::read_to_string("static/post.html").unwrap();
 
@@ -126,8 +122,8 @@ pub fn send_post(stream: &mut TcpStream, id: u32, db: &Arc<Mutex<Connection>>, u
             .replace("{{COMMENT_BOX}}", &comment_box)
             .replace("{{NR_COMMENTS}}", &comment_count.to_string())
             .replace("{{POST_ID}}", &p.id.to_string())
-            .replace("{{POST_DATE}}", &p.date)
-            .replace("{{POST_TEXT}}", &get_post_text(id))
+            .replace("{{POST_DATE}}", &p.date.to_string())
+            .replace("{{POST_TEXT}}", &p.body)
             .replace("{{COMMENTS}}", &comments_html)
             .replace("{{AUTH_BUTTONS}}", auth_html)
         },

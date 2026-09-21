@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Post &mdash; Zeth's Blog</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body class="font-sans bg-bg text-ink">
+
+    <!-- <div class="flex flex-row fixed right-15 top-10 gap-2">
+        {{AUTH_BUTTONS}}
+    </div> -->
+
+    <div class="max-w-2xl mx-auto px-6">
+
+        <div class="pt-10 pb-6">
+            <a href="/" class="pixel-btn inline-block">&larr; Back</a>
+        </div>
+
+        <header class="pb-8">
+            <h1 class="font-display text-4xl text-accent [text-shadow:3px_3px_0_rgba(0,0,0,0.35)]">Write a New Post</h1>
+            <p class="text-muted mt-3">Share something with the fire circle.</p>
+        </header>
+
+        <form method="post" action="/post/create" class="pixel-card flex flex-col gap-4 p-6">
+
+            <div class="flex flex-col gap-2">
+                <label for="title" class="font-display text-xs text-muted">Title</label>
+                <input type="text" id="title" name="title" required
+                    class="font-display text-xl text-ink bg-bg-deep border-2 border-outline p-3 focus:outline-none focus:border-accent transition-all"
+                    placeholder="Give it a name...">
+            </div>
+
+            <div class="flex flex-col gap-2">
+
+
+                <label for="body" class="font-display text-xs text-muted">Body</label>
+
+
+                <textarea id="body" name="body" required
+                    class="font-sans text-sm text-ink bg-bg-deep border-2 border-outline p-3 leading-relaxed resize-none overflow-y-auto focus:outline-none focus:border-accent transition-all"
+                    style="height: 320px;"
+                    placeholder="What's on your mind?"
+                    oninput="this.style.height='auto'; this.style.height = Math.max(320, this.scrollHeight) + 'px';"
+                ></textarea>
+            </div>
+
+            <div class="flex justify-between items-center mt-2">
+                <p class="text-xs opacity-45 leading-relaxed">Markdown isn't supported yet &mdash; plain text only.</p>
+                <button type="submit" class="pixel-btn cursor-pointer bg-accent text-bg-deep self-end">Publish Post</button>
+            </div>
+
+        </form>
+
+        <div class="pb-16"></div>
+
+    </div>
+
+</body>
+</html>

@@ -2,8 +2,8 @@ use std::net::TcpStream;
 use std::time::Instant;
 use crate::datatypes::RegisterResult::{ServerError, Success, UsernameTaken};
 use crate::http::{send_response,send_404};
-use crate::db_service::{send_comment};
-use crate::datatypes::{Attempts, Comment, PostCard};
+use crate::db_service::{get_post_cards, send_comment};
+use crate::datatypes::{Attempts, Comment, Credentials, PostCard};
 use crate::common::{self, auth_bar_html, items};
 use chrono::{DateTime, Utc};
 use std::io::{Write};
@@ -71,10 +71,11 @@ pub fn handle_reply(stream: &mut TcpStream, post_id: &str, parent_id: Option<&st
 
 
 
-pub fn render_home_page(home_loc: &str, items: Vec<PostCard>, user_id: Option<u32>) -> String{
+pub fn render_home_page(home_loc: &str, items: Vec<PostCard>, credentials: Credentials) -> String{
     // println!("Rendering home page, with {} posts", items.len());
 
-    let auth_html = auth_bar_html(user_id);
+
+    let auth_html = auth_bar_html(credentials.user_id);
 
     let mut final_post_html: String = "".to_string();
 
@@ -96,13 +97,21 @@ pub fn render_home_page(home_loc: &str, items: Vec<PostCard>, user_id: Option<u3
     let mut rb = std::fs::read_to_string(home_loc).unwrap();
     rb = rb.replace("{{POSTS}}", &final_post_html);
     rb = rb.replace("{{AUTH_BUTTONS}}", auth_html);
+    rb = rb.replace("{{USER_TYPE}}", if credentials.is_admin == true { "ADMIN" } else {"REGULAR USER/GUEST"});
     rb
 }
 
-pub fn send_home(stream: &mut TcpStream, user_id: Option<u32>){
+pub fn send_home(stream: &mut TcpStream, credentials: Credentials, db: &Arc<Mutex<Connection>>){
+
+    let postCards ={
+        let conn = get_con(db);
+        get_post_cards(&conn)
+    };
 
 
-    let rb = render_home_page("static/home.html", items(), user_id);
+
+
+    let rb = render_home_page("static/home.html", postCards, credentials);
     let response = format!(
         "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}",
         rb.len(),
