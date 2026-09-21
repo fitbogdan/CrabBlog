@@ -17,7 +17,7 @@ use rusqlite::Connection;
 
 use crate::common::decode_body_field;
 use crate::handlers::{get_con, handle_login, handle_register, handle_reply, send_css, send_home, send_image};
-use crate::http::{get_cookie, send_404,send_response};
+use crate::http::{ContentType, get_cookie, send_404, send_response};
 use crate::datatypes::{Attempts, Credentials};
 use crate::post::send_post;
 
@@ -45,7 +45,7 @@ pub fn get_body(request: &str) -> &str{
 }
 
 
-pub fn read_request_bytes(stream: &mut TcpStream) -> Option<Vec<u8>>{
+pub fn read_request_bytes(stream: &mut TcpStream, content_kind: &mut ContentType) -> Option<Vec<u8>>{
     let mut buffer:[u8; 1024] = [0; 1024];
 
     let mut n = match stream.read(&mut buffer){
@@ -75,19 +75,50 @@ pub fn read_request_bytes(stream: &mut TcpStream) -> Option<Vec<u8>>{
 
     //Get Content-Length:
     let mut content_length: Option<usize> = None;
-
+    let mut content_type: http::ContentType = http::ContentType::Nothing;
+    
     for line in String::from_utf8_lossy(&data[0..header_end]).lines(){
-        if line.to_lowercase().starts_with("content-length: "){
+        if line.to_lowercase().starts_with("content-length:"){
             if let Some((_, v)) = line.split_once(":"){
                 content_length = match v.trim().parse::<usize>(){
                     Ok(v) => Some(v),
                     Err(_) => None,
                 };
 
-
-                break; 
             }
         }
+
+        if line.to_lowercase().starts_with("content-type:"){
+            if let Some((_,v)) = line.split_once(":"){
+                let v = v.trim();
+                let (kind, params) = match v.split_once(";"){
+                    Some((k,p)) => (k.trim(), p),
+                    None => (v,"")
+                };
+
+                content_type = match kind{
+                    "application/x-www-form-urlencoded" => ContentType::Form,
+                    "multipart/form-data" => {
+                        let mut boundary = String::new();
+                        for p in params.split(";"){
+                            if let Some(b) = p.trim().strip_prefix("boundary="){
+                                boundary = b.to_string();
+                            }
+                        }
+
+                        ContentType::Multipart(boundary)
+                    },
+                    _ => ContentType::Nothing,
+                };
+            }
+        }
+    }
+
+    *content_kind = content_type;
+
+    const MAX_BODY_BYTES: usize = 10 * 1024 * 1024; // 10 MB
+    if content_length > Some(MAX_BODY_BYTES){
+        return None
     }
 
     if let Some(l) = content_length{
@@ -111,12 +142,12 @@ pub fn read_request_bytes(stream: &mut TcpStream) -> Option<Vec<u8>>{
 }
 
 pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, attempts: Attempts){
-
-    let request_bytes = match read_request_bytes(&mut stream){
+    let mut content_type: ContentType = ContentType::Form;
+    let request_bytes = match read_request_bytes(&mut stream, &mut content_type){
         Some(r) => r,
         None => return,
     };
-
+    
     let request = String::from_utf8_lossy(&request_bytes);
 
 

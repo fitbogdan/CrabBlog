@@ -1,6 +1,11 @@
 use std::{io::Write, net::TcpStream};
 
-
+pub enum ContentType{
+    Nothing,
+    Form,
+    Multipart(String), //Boundary
+    Other(String)
+}
 
 
 pub fn send_response(stream: &mut TcpStream, status: u32, content_type: &str, body: &str, extra_header: Option<&str>){
