@@ -4,7 +4,7 @@ use crate::datatypes::RegisterResult::{ServerError, Success, UsernameTaken};
 use crate::http::{self, send_404, send_response};
 use crate::db_service::{generate_token, get_post_cards, send_comment};
 use crate::datatypes::{Attempts, Comment, Credentials, PostCard};
-use crate::common::{self, auth_bar_html, items};
+use crate::common::{self, auth_bar_html};
 use chrono::{DateTime, Utc};
 use std::io::{Write};
 use std::sync::{Arc, Mutex, MutexGuard};

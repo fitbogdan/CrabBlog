@@ -1,9 +1,9 @@
 use rusqlite::Connection;
 
-use crate::datatypes::{Comment, Credentials, Post, PostCard};
-use crate::common::{self, auth_bar_html, items};
+use crate::datatypes::{Comment, Credentials, Post};
+use crate::common::{self, auth_bar_html};
 use crate::http::{send_response};
-use crate::db_service::{get_comment, get_post, get_posts};
+use crate::db_service::{get_comment, get_post};
 use crate::handlers::{get_con};
 use std::net::{TcpStream};
 use std::collections::{HashMap};
