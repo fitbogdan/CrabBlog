@@ -8,6 +8,81 @@ pub enum ContentType{
 }
 
 
+pub fn parse_multipart<'a>(boundary: &str, body: &'a[u8], from_part: u32) -> Option<&'a[u8]>{
+
+    let separator = format!("--{}", boundary);
+    let separator = separator.as_bytes();
+
+    let mut i = 0;
+    let mut parts = 0;
+    let mut start = None;
+
+    while i+separator.len() <= body.len(){
+        if &body[i..i+separator.len()] == separator{
+            if parts == from_part{
+                start = Some(i);
+                break;
+            }
+            else{
+                parts+=1;
+
+            }
+        }
+        i+=1;
+    }
+
+    let start = match start{
+        Some(s) => s,
+        None => return None
+    };
+
+
+    let mut i = start + separator.len();
+    let end_marker = format!("\r\n--{}", boundary);
+    let end_marker = end_marker.as_bytes();
+    let mut data_start = None;
+
+
+    while i+4 <= body.len(){
+        if &body[i..i+4] == b"\r\n\r\n"{
+            data_start = Some(i+4);
+            break; 
+        }
+
+        i+=1
+    } 
+
+    let data_start = match data_start {
+        Some(i) => i,
+        None => return None
+    };
+
+
+    let mut data_end = None;
+
+    i = data_start;
+    while i+end_marker.len() <= body.len(){
+        if &body[i..i+end_marker.len()] == end_marker{
+            data_end = Some(i);
+            break;
+        }
+        i+=1;
+    }
+
+
+    let data_end = match data_end{
+        Some(d) => d,
+        None => return None
+    };
+
+
+
+
+    println!("{}, THIS IS THE DATA::  !!!  {:?}", start, String::from_utf8_lossy(&body[data_start..data_end]));
+
+    Some(&body[data_start..data_end])
+}
+
 pub fn send_response(stream: &mut TcpStream, status: u32, content_type: &str, body: &str, extra_header: Option<&str>){
 
 

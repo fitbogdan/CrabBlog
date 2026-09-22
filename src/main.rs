@@ -17,7 +17,7 @@ use rusqlite::Connection;
 
 use crate::common::decode_body_field;
 use crate::handlers::{get_con, handle_login, handle_register, handle_reply, send_css, send_home, send_image};
-use crate::http::{ContentType, get_cookie, send_404, send_response};
+use crate::http::{ContentType, get_cookie, parse_multipart, send_404, send_response};
 use crate::datatypes::{Attempts, Credentials};
 use crate::post::send_post;
 
@@ -312,6 +312,48 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
             send_response(&mut stream, 200, "text/html", &html, None);
 
         },
+
+
+        ("POST", ["upload"]) => {
+
+
+
+            if credentials.is_admin == false{
+                send_response(&mut stream, 401, "text/html", "You are not allowed to do that", None);
+                return;
+            }
+
+
+
+            if let ContentType::Multipart(boundary) = content_type{
+
+
+                    // http::parse_multipart(&boundary, &request_bytes, 0);
+                let image_bytes = parse_multipart(&boundary, &request_bytes,0);
+
+                if let Some(image_bytes) = image_bytes{
+
+                let ext = if image_bytes.starts_with(&[0x89, b'P', b'N', b'G']) {
+                    "png"
+                } else if image_bytes.starts_with(&[0xFF, 0xD8, 0xFF]) {
+                    "jpg"
+                } else if image_bytes.starts_with(b"GIF8") {
+                    "gif"
+                } else {
+                    send_response(& mut stream, 400, "text/html", "Not an image", None);
+                    return;
+                };
+
+
+                    std::fs::write(format!("static/images/image.{}", ext), image_bytes).unwrap();
+                }
+
+
+
+                
+            }
+
+        }
 
         // ("GET", ["boom"]) =>{
         //     let con = get_con(&db);
