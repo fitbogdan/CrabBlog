@@ -23,8 +23,12 @@
             <p class="text-muted mt-3">Share something with the fire circle.</p>
         </header>
 
-        <form method="post" action="/post/create" class="pixel-card flex flex-col gap-4 p-6">
-
+        <form method="post" action="/post/create" enctype="multipart/form-data" class="pixel-card flex flex-col gap-4 p-6">
+            
+        <!-- <form method="post" action="/upload" enctype="multipart/form-data"> -->
+            <input type="file" name="image"> 
+            <button type="submit"> Send this Nig </button>
+        <!-- </form> -->
             <div class="flex flex-col gap-2">
                 <label for="title" class="font-display text-xs text-muted">Title</label>
                 <input type="text" id="title" name="title" required

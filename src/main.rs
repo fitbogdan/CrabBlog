@@ -15,9 +15,9 @@ use chrono::{Utc};
 use rusqlite::Connection;
 
 
-use crate::common::decode_body_field;
+// use crate::common::decode_body_field;
 use crate::handlers::{get_con, handle_login, handle_register, handle_reply, send_css, send_home, send_image};
-use crate::http::{ContentType, get_cookie, parse_multipart, send_404, send_response};
+use crate::http::{ContentType, get_cookie, get_multipart_part_bytes, send_404, send_response};
 use crate::datatypes::{Attempts, Credentials};
 use crate::post::send_post;
 
@@ -189,7 +189,7 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
 
     match (method.as_str(), segments.as_slice()){
         ("GET", []) => send_home(&mut stream, credentials, &db),
-        ("GET", ["image"]) => send_image(&mut stream, "static/zeth.jpg"),
+        // ("GET", ["static", "images", filename]) => send_image(&mut stream, &format!("static/images/{}",filename)),
         ("GET", ["post", id])  => {
             match id.parse::<u32>() {
                 Ok(post_id) => send_post(&mut stream, post_id, &db, credentials),
@@ -197,6 +197,32 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
             }
         },
         ("GET", ["style.css"]) => send_css(&mut stream, "static/style.css".to_string()),
+
+        ("GET", ["post", post_id, "image"]) => {
+
+            let post_id = match post_id.parse::<u32>(){
+                Ok(post_id) => post_id,
+                _ => {
+                    send_404(&mut stream);
+                    return;
+                },
+            };
+            let image_path = {
+                let conn = get_con(&db);
+                db_service::image_path_from_post_id(post_id, &conn) 
+            };
+
+            let image_path = match image_path{
+                Some(p) => p,
+                None => {
+                    send_404(&mut stream);
+                    return;
+                }
+            };
+
+
+            send_image(&mut stream, &image_path);
+        }
 
         ("POST", ["post", post_id, "reply"]) => {
 
@@ -221,17 +247,22 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
                 return;
             }
 
-            let headline = decode_body_field(body, "title");
-            let body = decode_body_field(body, "body");
-            let post = datatypes::Post { id: 0, title: headline, body, date: Utc::now() };
-            {
-                let conn = &get_con(&db);
-                db_service::send_post(conn, &post);
+            // let headline = decode_body_field(body, "title");
+            // let body = decode_body_field(body, "body");
+            // let post = datatypes::Post { id: 0, title: headline, body, date: Utc::now() };
+            // {
+            //     let conn = &get_con(&db);
+            //     db_service::send_post(conn, &post);
+            // }
+
+            // send_response(&mut stream, 302, "text/html", "", Some("Location: /"));
+
+            if let ContentType::Multipart(boundary) = content_type{
+                handlers::process_multipart_post(&mut stream, &request_bytes, &boundary, &db);
             }
-
-            send_response(&mut stream, 302, "text/html", "", Some("Location: /"));
-
-
+            else{
+                return
+            }
         },
 
         ("POST", ["post", post_id, "delete"]) => {
@@ -326,10 +357,8 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
 
 
             if let ContentType::Multipart(boundary) = content_type{
-
-
                     // http::parse_multipart(&boundary, &request_bytes, 0);
-                let image_bytes = parse_multipart(&boundary, &request_bytes,0);
+                let image_bytes = get_multipart_part_bytes(&boundary, &request_bytes,0);
 
                 if let Some(image_bytes) = image_bytes{
 
@@ -347,9 +376,6 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
 
                     std::fs::write(format!("static/images/image.{}", ext), image_bytes).unwrap();
                 }
-
-
-
                 
             }
 

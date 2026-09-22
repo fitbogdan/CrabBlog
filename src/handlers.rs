@@ -1,8 +1,8 @@
 use std::net::TcpStream;
 use std::time::Instant;
 use crate::datatypes::RegisterResult::{ServerError, Success, UsernameTaken};
-use crate::http::{send_response,send_404};
-use crate::db_service::{get_post_cards, send_comment};
+use crate::http::{self, send_404, send_response};
+use crate::db_service::{generate_token, get_post_cards, send_comment};
 use crate::datatypes::{Attempts, Comment, Credentials, PostCard};
 use crate::common::{self, auth_bar_html, items};
 use chrono::{DateTime, Utc};
@@ -11,6 +11,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use rusqlite::Connection;
 use crate::common::{decode_body_field};
 use crate::db_service;
+use crate::datatypes;
 
 
 
@@ -91,7 +92,7 @@ pub fn render_home_page(home_loc: &str, items: Vec<PostCard>, credentials: Crede
         post_html = post_html.replace("{{POST_DATE}}", &items[i].date);
         post_html = post_html.replace("{{POST_TITLE}}", &items[i].title);
         post_html = post_html.replace("{{POST_DESCRIPTION}}", &items[i].description);
-        post_html = post_html.replace("{{POST_IMAGE_URL}}", "/image");
+        post_html = post_html.replace("{{POST_IMAGE_URL}}", &format!("/post/{}/image", &items[i].id));
         post_html = post_html.replace("{{ADMIN_DELETE}}", &delete_button);
         post_html = post_html.replace("{{POST_ID}}", &format!("/post/{}", &items[i].id));
         
@@ -111,7 +112,7 @@ pub fn render_home_page(home_loc: &str, items: Vec<PostCard>, credentials: Crede
 
 pub fn send_home(stream: &mut TcpStream, credentials: Credentials, db: &Arc<Mutex<Connection>>){
 
-    let postCards ={
+    let post_cards ={
         let conn = get_con(db);
         get_post_cards(&conn)
     };
@@ -119,7 +120,7 @@ pub fn send_home(stream: &mut TcpStream, credentials: Credentials, db: &Arc<Mute
 
 
 
-    let rb = render_home_page("static/home.html", postCards, credentials);
+    let rb = render_home_page("static/home.html", post_cards, credentials);
     let response = format!(
         "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}",
         rb.len(),
@@ -159,7 +160,18 @@ pub fn send_image(stream: &mut TcpStream, file_path: &str){
         Err(_) => {send_404(stream); return;}
     };
 
-    let content_type = if file_path.ends_with(".jpg") { "image/jpeg" } else { "application/octet-stream" };
+    let ext = match file_path.rsplit_once('.'){
+        Some((_,e)) => e,
+        None => ""
+    };
+
+    let content_type = match ext{
+        "jpg" => "image/jpeg",
+        "png" => "image/png",
+        "gif"  => "image/gif",
+        _ => "application/octet-stream",
+    };
+
 
     let headers = format!(
         "HTTP/1.1 200 OK\r\nContent-Type: {}\r\nContent-Length: {}\r\n\r\n",
@@ -284,5 +296,63 @@ pub fn handle_register(stream: &mut TcpStream, body: &str, db: &Arc<Mutex<Connec
             send_response(stream, 500, "text/html", &register_html, None);
         }
     }
+
+}
+
+pub fn get_image_extension(image_bytes: &[u8]) -> Option<String>{
+    let ext = if image_bytes.starts_with(&[0x89, b'P', b'N', b'G']) {
+        "png"
+    } else if image_bytes.starts_with(&[0xFF, 0xD8, 0xFF]) {
+        "jpg"
+    } else if image_bytes.starts_with(b"GIF8") {
+        "gif"
+    } else {
+        // send_response(& mut stream, 400, "text/html", "Not an image", None);
+        return None;
+    };
+
+
+    return Some(ext.to_string());
+}
+
+pub fn process_multipart_post(stream: &mut TcpStream, body: &[u8], boundary: &str, db: &Arc<Mutex<Connection>>){
+    let image_bytes = match http::get_multipart_part_bytes(boundary, body, 0){
+        Some(b) => b,
+        None => return,
+    };
+
+    let headline = match http::get_multipart_part_bytes(boundary, body, 1){
+        Some(s) => String::from_utf8_lossy(&s).into_owned(),
+        None => return
+    };
+
+    let post_body = match http::get_multipart_part_bytes(boundary, body, 2){
+        Some(s) => String::from_utf8_lossy(&s).into_owned(),
+        None => return
+    };
+
+    let token = generate_token();
+    let ext = get_image_extension(&image_bytes);
+    if let Some(ext) = ext{
+
+        let filename = format!("{}.{}",token,ext);
+        let path = format!("static/images/{}", filename);
+        std::fs::write(&path, image_bytes).unwrap();
+
+
+        let post = datatypes::Post { id: 0, title: headline, body: post_body, date: Utc::now(), image_path: Some(path)};
+        {
+            let conn = &get_con(&db);
+            db_service::send_post(&conn, &post);
+        }
+
+        send_response(stream, 302, "text/html", "", Some("Location: /"));
+    }
+    else{
+        send_response(stream, 400, "text/html", "Not an image", None);
+        return;
+    }
+
+
 
 }

@@ -38,11 +38,12 @@ pub struct Post{
     pub title: String,
     pub body: String,
     pub date: DateTime<Utc>,
+    pub image_path: Option<String>,
 }
 
 impl Post{
-    pub fn new(id: u32, title: String, body: String, date: DateTime<Utc>) -> Post{
-        Post { id, title, body, date }
+    pub fn new(id: u32, title: String, body: String, date: DateTime<Utc>, image_path: Option<String>) -> Post{
+        Post { id, title, body, date , image_path}
     }
 }
 pub struct Comment{

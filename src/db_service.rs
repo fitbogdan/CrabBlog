@@ -42,7 +42,8 @@ pub fn create_db() -> Connection{
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 title TEXT NOT NULL,
                 body TEXT NOT NULL,
-                date TEXT NOT NULL
+                date TEXT NOT NULL,
+                image_path TEXT
             );" 
     ).unwrap();
 
@@ -107,11 +108,12 @@ pub fn send_comment(conn: &Connection, comment: &Comment){
 pub fn send_post(conn: &Connection, post: &Post){
 
     conn.execute(
-        "INSERT INTO posts (title, body, date) VALUES (?1, ?2, ?3)",
+        "INSERT INTO posts (title, body, date, image_path) VALUES (?1, ?2, ?3, ?4)",
         params![
             post.title,
             post.body,
-            Utc::now().to_rfc3339()
+            Utc::now().to_rfc3339(),
+            post.image_path
         ]
     ).unwrap();
 }
@@ -122,7 +124,7 @@ pub fn get_posts(conn: &Connection) -> Vec<Post>{
 
 
     let mut stmt = conn.prepare(
-        "SELECT id, title, body, date FROM posts"
+        "SELECT id, title, body, date, image_path FROM posts"
     ).unwrap();
 
 
@@ -137,7 +139,8 @@ pub fn get_posts(conn: &Connection) -> Vec<Post>{
                 id: row.get(0).unwrap(),
                 title: row.get(1).unwrap(),
                 body: row.get(2).unwrap(),
-                date: date
+                date: date,
+                image_path: row.get(4).unwrap(),
             }
         )
     }).unwrap();
@@ -148,7 +151,7 @@ pub fn get_posts(conn: &Connection) -> Vec<Post>{
 pub fn get_post_cards(conn: &Connection) -> Vec<PostCard>{
 
     let mut stmt = conn.prepare(
-        "SELECT id,title,substr(body, 1, 100),date FROM posts ORDER BY date DESC"
+        "SELECT id,title,substr(body, 1, 100),date, image_path FROM posts ORDER BY date DESC"
     ).unwrap();
 
     let rows = stmt.query_map([], |row|{
@@ -170,7 +173,7 @@ pub fn get_post_cards(conn: &Connection) -> Vec<PostCard>{
                 title: row.get(1).unwrap(),
                 description: first_line+"...",
                 date: date_str,
-                image_url: "TODO".to_string(),
+                image_url: row.get(4).unwrap(),
             }
         )
     }).unwrap();
@@ -193,7 +196,7 @@ pub fn get_post(conn: &Connection, id: u32) -> Option<Post>{
 
     
     let mut stmt = conn.prepare(
-        "SELECT title, body, date FROM posts WHERE id = ?1"
+        "SELECT title, body, date, image_path FROM posts WHERE id = ?1"
     ).unwrap();
 
     let row = stmt.query_one([id], |r| {
@@ -204,7 +207,8 @@ pub fn get_post(conn: &Connection, id: u32) -> Option<Post>{
                 id: id,
                 title: r.get(0).unwrap(),
                 body: r.get(1).unwrap(),
-                date: date
+                date: date,
+                image_path: r.get(3).unwrap()
             }
         )
     });
@@ -217,6 +221,24 @@ pub fn get_post(conn: &Connection, id: u32) -> Option<Post>{
         _ => None
     }
 
+}
+
+
+pub fn image_path_from_post_id(post_id: u32, conn: &Connection) -> Option<String>{
+    let mut stmt = conn.prepare(
+        "SELECT image_path FROM posts WHERE id = ?1"
+    ).unwrap();
+
+    let result = stmt.query_one([post_id], |row|{
+        let image_path: String = row.get(0).unwrap();
+
+        Ok(image_path)
+    });
+
+    match result{
+        Ok(path) => Some(path),
+        _ => None
+    }
 }
 
 

@@ -8,7 +8,7 @@ pub enum ContentType{
 }
 
 
-pub fn parse_multipart<'a>(boundary: &str, body: &'a[u8], from_part: u32) -> Option<&'a[u8]>{
+pub fn get_multipart_part_bytes<'a>(boundary: &str, body: &'a[u8], from_part: u32) -> Option<&'a[u8]>{
 
     let separator = format!("--{}", boundary);
     let separator = separator.as_bytes();
@@ -17,6 +17,29 @@ pub fn parse_multipart<'a>(boundary: &str, body: &'a[u8], from_part: u32) -> Opt
     let mut parts = 0;
     let mut start = None;
 
+    /*
+    
+        How this request body looks like (Roughly):
+
+        --Boundary(A random string which isn't in the body, with -- before it)
+        Headers
+        \r\n\r\n
+        Part 1
+
+        --Boundary
+        Headers
+        \r\n\r\n
+        Part 2
+
+        --Boundary
+
+        ... etc ...
+        \r\n--Boundary-- (This is the end)
+    
+    */
+
+
+    //Loop over form_part boundaries, meaning we get to the form_part-th part of the request.
     while i+separator.len() <= body.len(){
         if &body[i..i+separator.len()] == separator{
             if parts == from_part{
@@ -43,6 +66,7 @@ pub fn parse_multipart<'a>(boundary: &str, body: &'a[u8], from_part: u32) -> Opt
     let mut data_start = None;
 
 
+    //Skipping over the headers:
     while i+4 <= body.len(){
         if &body[i..i+4] == b"\r\n\r\n"{
             data_start = Some(i+4);
@@ -51,7 +75,7 @@ pub fn parse_multipart<'a>(boundary: &str, body: &'a[u8], from_part: u32) -> Opt
 
         i+=1
     } 
-
+    //Found the start of the data or not:
     let data_start = match data_start {
         Some(i) => i,
         None => return None
@@ -60,6 +84,8 @@ pub fn parse_multipart<'a>(boundary: &str, body: &'a[u8], from_part: u32) -> Opt
 
     let mut data_end = None;
 
+
+    //Data ends when we meet the next marker, which is \r\n--boundary, \r\n because its just a new line
     i = data_start;
     while i+end_marker.len() <= body.len(){
         if &body[i..i+end_marker.len()] == end_marker{
@@ -80,8 +106,11 @@ pub fn parse_multipart<'a>(boundary: &str, body: &'a[u8], from_part: u32) -> Opt
 
     println!("{}, THIS IS THE DATA::  !!!  {:?}", start, String::from_utf8_lossy(&body[data_start..data_end]));
 
+    //Return the slice of the body bytes which corresponds to the form_part-th part of the request.
     Some(&body[data_start..data_end])
 }
+
+
 
 pub fn send_response(stream: &mut TcpStream, status: u32, content_type: &str, body: &str, extra_header: Option<&str>){
 
