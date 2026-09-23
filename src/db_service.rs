@@ -252,6 +252,13 @@ pub fn get_post(conn: &Connection, id: u32) -> Option<Post>{
 
 }
 
+pub fn edit_post(conn: &Connection, id: u32, title: &str, body: &str){
+    conn.execute("
+    UPDATE posts SET title = ?1, body = ?2 WHERE id = ?3", 
+    params![title, body, id]
+    ).unwrap();
+}
+
 
 pub fn image_path_from_post_id(post_id: u32, conn: &Connection) -> Option<String>{
     let mut stmt = conn.prepare(

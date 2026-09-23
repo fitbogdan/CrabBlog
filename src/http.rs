@@ -110,6 +110,112 @@ pub fn get_multipart_part_bytes<'a>(boundary: &str, body: &'a[u8], from_part: u3
     Some(&body[data_start..data_end])
 }
 
+pub fn get_multipart_parts<'a>(boundary: &str, body: &'a[u8]) -> Vec<(String, &'a[u8])>{
+
+
+    let separator = format!("--{}", boundary);
+    let separator = separator.as_bytes();
+
+    let end_marker = format!("\r\n--{}", boundary);
+    let end_marker = end_marker.as_bytes();
+
+    let mut res: Vec<(String, &[u8])> = Vec::new();
+
+    let end_request_marker = format!("--{}--", boundary);
+    let end_request_marker = end_request_marker.as_bytes();
+
+
+
+
+    let mut i = 0;
+
+    while i+end_request_marker.len() <= body.len(){
+        if &body[i..i+end_request_marker.len()] == end_request_marker{
+            break;
+        }
+
+
+        if &body[i..i+separator.len()] == separator{
+            //First part
+            i+=2;
+
+            //i is now the start of the header
+            let mut j = i;
+            let mut header_end = None;
+            while j+4 <= body.len(){
+                if &body[j..j+4] == b"\r\n\r\n"{
+                    header_end = Some(j);
+
+                    break;
+                    //Get the name of the field:
+                }
+                j+=1
+            }
+
+
+
+            let header_end = match header_end{
+                Some(p) => p,
+                None => return Vec::new()
+            };
+
+            let headers = String::from_utf8_lossy(&body[i..header_end]);
+            let mut name = String::new();
+            for line in headers.lines(){
+                if let Some((header, values)) = line.split_once(":"){
+                    if header.trim().to_lowercase() == "content-disposition"{
+                        for p in values.split(";"){
+                            let p = p.trim();
+
+                            if let Some((field, value)) = p.split_once("="){
+                                if field == "name"{
+                                    name = value.trim_matches('"').to_string();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // println!("Got NAMES FROM THIS MULTIPART WHOOO:        {}", &name);
+
+
+            //i is the start of the headers,
+            //j is the end of the headers.
+            let data_start = header_end+4;
+            let mut k = data_start;
+            let mut data_end = None;
+            while k+end_marker.len() <= body.len(){
+                if &body[k..k+end_marker.len()] == end_marker{
+                    data_end = Some(k);
+                    break;
+                }
+                k+=1;
+            }
+
+            let data_end = match data_end{
+                Some(k) => k,
+                None => return Vec::new()
+            };
+
+            // println!("{} {}", data_start, data_end);
+
+            let bytes = &body[data_start..data_end];
+
+
+            res.push((name, bytes));
+        }
+        i+=1
+    }
+
+    // println!("The result: {:?}", res);
+
+    // println!("The first: {} \n\n\n\n\n The second: {}", String::from_utf8_lossy(res[0].1), String::from_utf8_lossy(res[1].1));
+
+    return res;
+}
+
 
 
 pub fn send_response(stream: &mut TcpStream, status: u32, content_type: &str, body: &str, extra_header: Option<&str>){

@@ -94,7 +94,7 @@ pub fn render_home_page(home_loc: &str, items: Vec<PostCard>, credentials: Crede
         post_html = post_html.replace("{{POST_DESCRIPTION}}", &items[i].description);
         post_html = post_html.replace("{{POST_IMAGE_URL}}", &format!("/post/{}/image", &items[i].id));
         post_html = post_html.replace("{{ADMIN_DELETE}}", &delete_button);
-        post_html = post_html.replace("{{POST_ID}}", &format!("/post/{}", &items[i].id));
+        post_html = post_html.replace("{{POST_ID}}", &format!("{}", &items[i].id));
         
         final_post_html = final_post_html + &post_html;
     }

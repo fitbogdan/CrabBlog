@@ -19,21 +19,21 @@
         </div>
 
         <header class="pb-8">
-            <h1 class="font-display text-4xl text-accent [text-shadow:3px_3px_0_rgba(0,0,0,0.35)]">Write a New Post</h1>
+            <h1 class="font-display text-4xl text-accent [text-shadow:3px_3px_0_rgba(0,0,0,0.35)]">{{PAGE_HEADING}}</h1>
             <p class="text-muted mt-3">Share something with the fire circle.</p>
         </header>
 
-        <form method="post" action="/post/create" enctype="multipart/form-data" class="pixel-card flex flex-col gap-4 p-6">
+        <form method="post" action="{{ACTION}}" enctype="multipart/form-data" class="pixel-card flex flex-col gap-4 p-6">
             
         <!-- <form method="post" action="/upload" enctype="multipart/form-data"> -->
             <input type="file" name="image"> 
             <button type="submit"> Send this Nig </button>
         <!-- </form> -->
             <div class="flex flex-col gap-2">
-                <label for="title" class="font-display text-xs text-muted">Title</label>
+                <label for="title" class="font-display text-xs text-muted" >Title</label>
                 <input type="text" id="title" name="title" required
                     class="font-display text-xl text-ink bg-bg-deep border-2 border-outline p-3 focus:outline-none focus:border-accent transition-all"
-                    placeholder="Give it a name...">
+                    placeholder="Give it a name..."  value="{{TITLE}}">
             </div>
 
             <div class="flex flex-col gap-2">
@@ -47,7 +47,7 @@
                     style="height: 320px;"
                     placeholder="What's on your mind?"
                     oninput="this.style.height='auto'; this.style.height = Math.max(320, this.scrollHeight) + 'px';"
-                ></textarea>
+                >{{BODY}}</textarea>
             </div>
 
             <div class="flex justify-between items-center mt-2">

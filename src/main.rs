@@ -18,7 +18,7 @@ use rusqlite::Connection;
 // use crate::common::decode_body_field;
 use crate::handlers::{get_con, handle_login, handle_register, handle_reply, send_css, send_home, send_image};
 use crate::http::{ContentType, get_cookie, get_multipart_part_bytes, send_404, send_response};
-use crate::datatypes::{Attempts, Credentials};
+use crate::datatypes::{Attempts, Credentials, Post};
 use crate::post::send_post;
 
 
@@ -305,15 +305,7 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
                 return;
             }
 
-            // let headline = decode_body_field(body, "title");
-            // let body = decode_body_field(body, "body");
-            // let post = datatypes::Post { id: 0, title: headline, body, date: Utc::now() };
-            // {
-            //     let conn = &get_con(&db);
-            //     db_service::send_post(conn, &post);
-            // }
 
-            // send_response(&mut stream, 302, "text/html", "", Some("Location: /"));
 
             if let ContentType::Multipart(boundary) = content_type{
                 handlers::process_multipart_post(&mut stream, &request_bytes, &boundary, &db);
@@ -389,12 +381,97 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
                 return;
             }
 
+            let html = std::fs::read_to_string("static/create_post.html").unwrap();
+
+            let final_write_html = html.replace("{{PAGE_HEADING}}", "Write a new post!")
+                                        .replace("{{TITLE}}", "")
+                                        .replace("{{BODY}}", "")
+                                        .replace("{{ACTION}}", "/post/create");
+            
+
+            send_response(&mut stream, 200, "text/html", &final_write_html, None);
+
+        },
+        //Add ? at the end because thats how the browser GET form sends it
+        //A ? at the end with no params because I send no params
+        ("GET", ["post", post_id, "edit?"]) => {
+
+            print!("GOT INTO EDIT !!!!!!!!!!!!!!!!!!!!!!!! \n\n\n\\n\n\n\n\n");
+
+            let post_id = match post_id.parse::<u32>(){
+                Ok(id) => id,
+                _ => {
+                    send_404(&mut stream);
+                    return;
+                }
+            };
+
+            let post: Option<Post> = {
+                let conn = &get_con(&db);
+                db_service::get_post(conn, post_id)
+            };
+
+
+            let post = match post{
+                Some(p) => p,
+                None => {
+                    send_404(&mut stream);
+                    return;
+                }
+            };
+
+            if credentials.is_admin == false{
+                send_response(&mut stream, 401, "text/html", "You are not allowed to do that", None);
+                return;
+            }
 
             let html = std::fs::read_to_string("static/create_post.html").unwrap();
 
-            send_response(&mut stream, 200, "text/html", &html, None);
+            let final_edit_html = html.replace("{{PAGE_HEADING}}", "Edit this post!")
+                                        .replace("{{TITLE}}", &post.title)
+                                        .replace("{{BODY}}", &post.body)
+                                        .replace("{{ACTION}}", &format!("/post/{}/edit", post_id));
 
+
+            send_response(&mut stream, 200, "text/html", &final_edit_html, None);
         },
+        ("POST", ["post", post_id, "edit"]) => {
+
+            let post_id = match post_id.parse::<u32>(){
+                Ok(id) => id,
+                _ => {
+                    send_404(&mut stream);
+                    return;
+                }
+            };
+
+
+            if let ContentType::Multipart(boundary) = content_type{
+                http::get_multipart_parts(&boundary, &request_bytes);
+
+                let headline = match http::get_multipart_part_bytes(&boundary, &request_bytes, 1){
+                    Some(s) => String::from_utf8_lossy(&s).into_owned(),
+                    None => return
+                };
+
+                let post_body = match http::get_multipart_part_bytes(&boundary, &request_bytes, 2){
+                    Some(s) => String::from_utf8_lossy(&s).into_owned(),
+                    None => return
+                };
+
+
+                let post: Post = Post { id: post_id, title: headline, body: post_body, date: Utc::now(), image_path: None };
+
+                {
+                    let conn = &get_con(&db);
+                    db_service::edit_post(conn, post_id, &post.title, &post.body);
+                }
+
+
+                send_response(&mut stream, 302, "text/html", "", Some(&format!("Location: /post/{}", post_id)));
+
+            }
+        }
 
 
         ("POST", ["upload"]) => {

@@ -1,3 +1,7 @@
-<form method="post" action="{{POST_ID}}/delete" class="absolute right-3 top-2 z-10">
+<form method="post" action="/post/{{POST_ID}}/delete" class="absolute right-3 top-2 z-10">
     <button type="submit" class="pixel-badge cursor-pointer">X</button>
 </form>
+<form method="get" action="/post/{{POST_ID}}/edit" class="absolute right-10 top-2 z-10">
+    <button type="submit" class="pixel-badge cursor-pointer">Edit</button>
+</form>
+
