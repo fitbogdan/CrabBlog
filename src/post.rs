@@ -10,7 +10,7 @@ use std::collections::{HashMap};
 use std::sync::{Arc, Mutex};
 
 
-pub fn render_comments(post_id: u32, db: &Arc<Mutex<Connection>>) -> (String, usize){
+pub fn render_comments(post_id: u32, db: &Arc<Mutex<Connection>>, credentials: &Credentials) -> (String, usize){
     let comments = {
         let conn = get_con(db);
         get_comment(&conn, post_id)
@@ -28,9 +28,15 @@ pub fn render_comments(post_id: u32, db: &Arc<Mutex<Connection>>) -> (String, us
 
     let mut subcomments: HashMap<u32, Vec<Comment>> = HashMap::new();
     let mut parents: Vec<Comment> = Vec::new();
+    let user_id = match credentials.user_id{
+        Some(id) => id,
+        None => return ("".to_string(), 0)
+    };
+    // let delete_comment_html = match credentials.is_admin{
 
-
-
+    // }
+    let delete_html = std::fs::read_to_string(common::DELTE_COMMENT_BUTTON).unwrap();
+    let delete_sub_html = std::fs::read_to_string(common::DELETE_SUBCOMMENT_BUTTON).unwrap();
 
     for i in comments{
         if i.post_id != post_id{
@@ -54,10 +60,13 @@ pub fn render_comments(post_id: u32, db: &Arc<Mutex<Connection>>) -> (String, us
 
         let mut cur = 
             comment_template.replace("{{USERNAME}}", &username)
+            .replace("{{DELETE_COMMENT}}", if user_id == i.user_id || credentials.is_admin == true { &delete_html } else { "" })
             .replace("{{DATE_POSTED}}", &i.date.to_string())
             .replace("{{COMMENT}}", &i.body)
             .replace("{{POST_ID}}", &i.post_id.to_string())
             .replace("{{COMMENT_ID}}", &i.id.to_string());
+
+
         let mut cur_subcomments = String::new();
 
         if let Some(subs) = subcomments.get(&i.id){
@@ -69,8 +78,12 @@ pub fn render_comments(post_id: u32, db: &Arc<Mutex<Connection>>) -> (String, us
 
                 let cur_subcomment = 
                     subcomment_template.replace("{{USERNAME}}", username)
+                                        .replace("{{DELETE_COMMENT}}", if user_id == s.user_id || credentials.is_admin == true { &delete_sub_html } else { "" })
                                        .replace("{{DATE}}", &s.date.to_string())
-                                       .replace("{{BODY}}", &s.body.to_string());
+                                       .replace("{{BODY}}", &s.body.to_string())
+                                       .replace("{{COMMENT_ID}}", &s.id.to_string())
+                                       .replace("{{POST_ID}}", &s.post_id.to_string());
+                                
 
 
                 cur_subcomments.push_str(&cur_subcomment);
@@ -116,7 +129,7 @@ pub fn send_post(stream: &mut TcpStream, id: u32, db: &Arc<Mutex<Connection>>, c
         Some(p) => {
             
 
-            let (comments_html, comment_count) = render_comments(p.id,db);
+            let (comments_html, comment_count) = render_comments(p.id,db, &credentials);
             
 
             rb.replace("{{POST_TITLE}}", &p.title)

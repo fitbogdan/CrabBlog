@@ -104,6 +104,35 @@ pub fn send_comment(conn: &Connection, comment: &Comment){
     ).unwrap();
 }
 
+pub fn delete_comment(conn: &Connection, comment_id: u32){
+    conn.execute("
+        DELETE FROM comments WHERE id = ?1", 
+        params![comment_id] 
+    ).unwrap();
+
+    conn.execute(
+        "DELETE FROM comments WHERE parent_id = ?1",
+        params![comment_id]
+    ).unwrap();
+}
+
+pub fn get_comment_author(conn: &Connection, comment_id: u32) -> Option<u32>{
+    let mut stmt = conn.prepare(
+        "SELECT user_id from comments WHERE id = ?1"
+    ).unwrap();
+
+
+    let res = stmt.query_one([comment_id], |row|{
+        let id: u32 = row.get(0).unwrap();
+        Ok(id)
+    });
+
+    match res{
+        Ok(id) => Some(id),
+        _ => None
+    }
+}
+
 
 pub fn send_post(conn: &Connection, post: &Post){
 

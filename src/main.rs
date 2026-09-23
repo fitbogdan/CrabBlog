@@ -198,6 +198,64 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
         },
         ("GET", ["style.css"]) => send_css(&mut stream, "static/style.css".to_string()),
 
+        ("POST", ["comment", comment_id, "delete", post_id]) => {
+
+
+
+            let comment_id = match comment_id.parse::<u32>(){
+                Ok(id) => id,
+                _ => {
+                    send_404(&mut stream);
+                    return;
+                }
+            };
+
+            let post_id = match post_id.parse::<u32>(){
+                Ok(id) => id,
+                _ => {
+                    send_404(&mut stream);
+                    return;
+                }
+            };
+
+
+            if credentials.is_admin == false{ //Check if the comment belongs to the user:
+                let author_id = {
+                    let conn = get_con(&db);
+                    db_service::get_comment_author(&conn, comment_id)
+                };
+
+
+                let author_id = match author_id{
+                    Some(id) => id,
+                    None => {
+                        send_404(&mut stream);
+                        return;
+                    }
+                };
+
+                if let Some(uid) = user_id{
+                    if author_id != uid{
+                        send_response(&mut stream, 401, "text/html", "You are not allowed to do that", None);
+                        return;
+                    }
+                }
+                else{
+                    send_404(&mut stream);
+                    return;
+                }
+            }
+
+
+            {
+                let conn = &get_con(&db);
+                db_service::delete_comment(conn, comment_id);
+            }
+
+            send_response(&mut stream, 302, "text/html", "", Some(&format!("Location: /post/{}", post_id)));
+            
+        }
+
         ("GET", ["post", post_id, "image"]) => {
 
             let post_id = match post_id.parse::<u32>(){
@@ -290,12 +348,6 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
 
 
             send_response(&mut stream, 302, "text/html", "", Some("Location: /"));
-
-
-
-
-
-
         }
         
         ("POST", ["login"]) => {
@@ -379,7 +431,7 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
                 
             }
 
-        }
+        },
 
         // ("GET", ["boom"]) =>{
         //     let con = get_con(&db);

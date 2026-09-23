@@ -1,13 +1,14 @@
 use crate::datatypes::{PostCard};
 
+pub const COMPONENTS_PATH: &str = "static/components/";
 pub const AUTH_COMMENT_BOX: &str = "static/components/auth_comment_box.html";
 pub const GUEST_COMMENT_BOX: &str = "static/components/guest_comment_box.html";
 pub const COMMENT_HTML: &str = "static/components/comment.html";
 pub const POST_CARD: &str = "static/components/post_card.html";
 pub const SUBCOMMENT_HTML: &str = "static/components/subcomment.html";
 pub const DELETE_POST_BUTTON: &str = "static/components/delete_post_button.html";
-
-
+pub const DELTE_COMMENT_BUTTON: &str = "static/components/delete_comment.html";
+pub const DELETE_SUBCOMMENT_BUTTON: &str = "static/components/delete_subcomment.html";
 
 pub fn auth_bar_html(user_id: Option<u32>) -> &'static str{
     match user_id{
