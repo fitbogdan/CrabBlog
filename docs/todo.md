@@ -1,3 +1,8 @@
+LEFT TODO:
+For edit post, when POST /post/id/edit? doesn't provide IMAGE bytes, it means you keep the same image that is stored for that post
+
+
+
 ## Major features:
 Edit posts, at least the text, bonus the image
 
