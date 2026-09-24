@@ -167,6 +167,10 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
         _=> (None,false)
     };
 
+    if let Some(user_id) = user_id{
+        common::get_color_from_id(user_id);
+    }
+
     let credentials: Credentials = Credentials::new(user_id, is_admin);
 
 
@@ -437,6 +441,11 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
         },
         ("POST", ["post", post_id, "edit"]) => {
 
+            if credentials.is_admin == false{
+                send_response(&mut stream, 401, "text/html", "You are not allowed to do that", None);
+                return;
+            }
+
             let post_id = match post_id.parse::<u32>(){
                 Ok(id) => id,
                 _ => {
@@ -447,24 +456,86 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
 
 
             if let ContentType::Multipart(boundary) = content_type{
-                http::get_multipart_parts(&boundary, &request_bytes);
+                let payload = http::get_multipart_parts(&boundary, &request_bytes);
 
-                let headline = match http::get_multipart_part_bytes(&boundary, &request_bytes, 1){
-                    Some(s) => String::from_utf8_lossy(&s).into_owned(),
-                    None => return
+                //Upload image_bytes IF image_bytes not null, and get path,
+                //Else, get keep path from last post
+                let image_bytes = payload.iter().find(|&x| x.0 == "image").map(|x| x.1);
+
+                println!("Image bytes: {:?}", image_bytes);
+
+                let old_post = {
+                    let conn = get_con(&db);
+                    db_service::get_post(&conn, post_id)
+                };
+                let old_post = match old_post{
+                    Some(p) => p,
+                    None => {
+                        send_response(&mut stream, 404, "text/html", "<h1>Post ID invalid</h1>", None);
+                        return
+                    }
                 };
 
-                let post_body = match http::get_multipart_part_bytes(&boundary, &request_bytes, 2){
-                    Some(s) => String::from_utf8_lossy(&s).into_owned(),
-                    None => return
+                let mut image_path = None;
+
+                if image_bytes == Some(&[]){
+                    image_path = old_post.image_path;
+                }
+                else if let Some(image) = image_bytes{
+                    let ext = handlers::get_image_extension(&image);
+                    let ext = match ext{
+                        Some(e) => e,
+                        None => {
+                            send_response(&mut stream, 404, "text/html", "<h1>Image ext not valid!</h1>", None);
+                            return
+                        }
+                    };
+
+
+                    let token = db_service::generate_token();
+
+                    let filename = format!("{}.{}", token, ext);
+                    let path = format!("static/images/{}", filename);
+                    std::fs::write(&path, image).unwrap();
+
+
+                    image_path = Some(path.clone());
+                }
+
+
+                //I decided not to let no headline posts
+                let headline = payload.iter().find(|&x| x.0 == "title").map(|x| x.1);
+                let headline = match headline{
+                    Some(h) => h,
+                    None => {
+                        send_response(&mut stream, 400, "text/html", "<h1>You need to add a headline</h1>", None);
+                        return
+                    }
                 };
+                let headline = String::from_utf8_lossy(headline).into_owned();
 
 
-                let post: Post = Post { id: post_id, title: headline, body: post_body, date: Utc::now(), image_path: None };
+
+
+                let body = payload.iter().find(|&x| x.0 == "body").map(|x| x.1);
+                let body = match body{
+                    Some(b) => b,
+                    None => {
+                        send_response(&mut stream, 400, "text/html", "<h1>You must add a post body</h1>", None);
+                        return
+                    }
+                };
+                let post_body = String::from_utf8_lossy(body).into_owned();
+
+
+                let post: Post = Post{id: post_id, title: headline, body: post_body, date: old_post.date, image_path: image_path};
+
+
+                // let post: Post = Post { id: post_id, title: headline, body: post_body, date: Utc::now(), image_path: None };
 
                 {
                     let conn = &get_con(&db);
-                    db_service::edit_post(conn, post_id, &post.title, &post.body);
+                    db_service::edit_post(conn, &post);
                 }
 
 

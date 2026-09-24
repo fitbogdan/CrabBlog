@@ -1,18 +1,22 @@
-LEFT TODO:
-For edit post, when POST /post/id/edit? doesn't provide IMAGE bytes, it means you keep the same image that is stored for that post
-
+HOUSEKEEPING: 
+CLEAN UP HANDLE_CONNECTION, SEND EVERYONE INTO THEIR OWN FILES
 
 
 ## Major features:
-Edit posts, at least the text, bonus the image
+User profiles - Generate color from ID + put their own first letter, and also their join dates
 
 Store emails
 
 Way later: Edit comment (For user and for admin)
 
+Display image on the post page too
 
+later: Reply to individual comments.
 
 ## Safety/Bugs:
+
+--- Rewrite /post/create to use the new function: get_multipart_parts, instead of just taking the bytes by index ---
+
 
 !! Reading multipart assumes image is the first part, thus if you send a post with no image it results in a bad request because it cannot find the image. !!
 
@@ -28,9 +32,17 @@ Control formatting of usernames and of passwords
 
 Rate limiting on sending comments
 
+Limit \n's on comments
+
 
 
 ## Frontend polish:
+
+Real readable dates
+
+Correct comment count on page + home page
+
+Create default image if I sent the post with no image, just add that one.
 
 Two password fields to make sure they type the correct password
 

@@ -1,3 +1,5 @@
+use std::f32::consts::GOLDEN_RATIO;
+
 use crate::datatypes::{PostCard};
 
 pub const COMPONENTS_PATH: &str = "static/components/";
@@ -9,6 +11,74 @@ pub const SUBCOMMENT_HTML: &str = "static/components/subcomment.html";
 pub const DELETE_POST_BUTTON: &str = "static/components/delete_post_button.html";
 pub const DELTE_COMMENT_BUTTON: &str = "static/components/delete_comment.html";
 pub const DELETE_SUBCOMMENT_BUTTON: &str = "static/components/delete_subcomment.html";
+pub const USER_CARD: &str = "static/components/user_card.html";
+
+
+pub fn get_color_from_id(user_id: u32) -> &'static str{
+
+    const AVATAR_COLORS: [&str; 8] = [    
+        "#c94f4f",
+        "#c98b4f",
+        "#c9c44f",
+        "#6fc94f",
+        "#4fc9b0",
+        "#4f8bc9",
+        "#7a4fc9",
+        "#c94fa8",
+    ];
+
+    const GOLDEN_RATIO: f64 = 1.61803398875;
+    const TWO_POW_32: f64 = 2u64.pow(32) as f64;
+    const FACTOR: u32 = (TWO_POW_32 / GOLDEN_RATIO) as u32;
+
+    let position = user_id.wrapping_mul(FACTOR);
+    let slice = (position>>29) as usize; //Need only 0 to 7 (Only 8 colors), so we only need 3 bits. The 3 highest bits are the most randomised, they are farthest apart from eachother
+
+    /*
+
+        Mindset: Think of the user taking user_id steps of a length X on a circle with circumference = 1.
+
+        We split that circle into AVATAR_COLORS.len() regions, all representing a color. So if you are 0.1 away from the start, you may land in region 1, meaning the first color.
+
+        Now, in order to make this evenly distributed, we need a number, which, never meets itself on the circle, when we add it to itself.
+
+        So it means that no matter how many times you add it to itself, the fractional part will never be the same.
+
+        But more than that. The fractional part never comes CLOSE to another past fractional part, no matter how much you add.
+
+        If the fractional part would come close to another part, the points will all clump up in 1-2 regions and everyone has the same colors.
+
+        The golden ratio is the number that stays furthest from repeating, so every new step lands in one of the largest remaining gaps.
+
+
+
+        Long story short its the Golden Ration.
+
+
+
+        This is the slower version. The one up is for faster computation. This is for clarity:
+
+        let position = (user_id as f64 * 1.61803398875).fract(); // Position from one to zero on the circle.
+
+        let slice = (position * 8.0) as usize;
+
+        Basically we take the Golden Ratio, and multiply it by our user id, and that way we see where we would land after
+        user_id steps of length golden ratio.
+
+        Strip the integer part and keep the decimals with .fract(), to see how much percentage of the circle we since the start we have covered.
+
+        Since circle is len 1, the integer part is just N laps around the circle
+
+        Then just multiply that by 8, because the circle is length one, the fractional distance on it of say, 0.x, is the same as saying X% of the circle.
+
+        So multiply by 8 and boom you get the region of the circle you want, aka the color.
+    
+    */ 
+
+    AVATAR_COLORS[slice]
+}
+
+
 
 pub fn auth_bar_html(user_id: Option<u32>) -> &'static str{
     match user_id{

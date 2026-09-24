@@ -38,6 +38,10 @@ pub fn render_comments(post_id: u32, db: &Arc<Mutex<Connection>>, credentials: &
     let delete_html = std::fs::read_to_string(common::DELTE_COMMENT_BUTTON).unwrap();
     let delete_sub_html = std::fs::read_to_string(common::DELETE_SUBCOMMENT_BUTTON).unwrap();
 
+    let mut user_card_html_template = std::fs::read_to_string(common::USER_CARD).unwrap();
+
+
+
     for i in comments{
         if i.post_id != post_id{
             continue;
@@ -50,6 +54,8 @@ pub fn render_comments(post_id: u32, db: &Arc<Mutex<Connection>>, credentials: &
     }
 
 
+
+
     for i in parents{
 
         let username = match &i.username{
@@ -57,11 +63,25 @@ pub fn render_comments(post_id: u32, db: &Arc<Mutex<Connection>>, credentials: &
             _ => "",
         };
 
+        let first_letter = match username.chars().next(){
+            Some(c) => c.to_uppercase().to_string(),
+            None => "Z".to_string()
+        };
 
+
+        // let user_card_html = user_card_html_template.replace("{{USERNAME}}", &username)
+        //                                .replace("{{DATE_POSTED}}", &i.date.to_string())
+        //                                .replace("{{AVATAR_COLOR}}", &format!("style=\"background-color: {};\"", common::get_color_from_id(i.user_id)));
+
+        //Parent Comments
         let mut cur = 
-            comment_template.replace("{{USERNAME}}", &username)
+            comment_template
             .replace("{{DELETE_COMMENT}}", if user_id == i.user_id || credentials.is_admin == true { &delete_html } else { "" })
+            // .replace("{{USER_CARD}}", &user_card_html)
             .replace("{{DATE_POSTED}}", &i.date.to_string())
+            .replace("{{USERNAME}}", &username)
+            .replace("{{AVATAR_COLOR}}", &format!("style=\"background-color: {};\"", common::get_color_from_id(i.user_id)))
+            .replace("{{FIRST_LETTER}}", &first_letter)
             .replace("{{COMMENT}}", &i.body)
             .replace("{{POST_ID}}", &i.post_id.to_string())
             .replace("{{COMMENT_ID}}", &i.id.to_string());
@@ -76,10 +96,25 @@ pub fn render_comments(post_id: u32, db: &Arc<Mutex<Connection>>, credentials: &
                     _ => "",
                 };
 
+
+                let first_letter = match username.chars().next(){
+                    Some(c) => c.to_uppercase().to_string(),
+                    None => "Z".to_string()
+                };
+
+                //Subcomments
+
+                // let user_card_html = user_card_html_template.replace("{{USERNAME}}", &username)
+                //                                             .replace("{{DATE_POSTED}}", &s.date.to_string())
+                //                                 .replace("{{AVATAR_COLOR}}", &format!("style=\"background-color: {};\"", common::get_color_from_id(s.user_id)));
+
+
                 let cur_subcomment = 
-                    subcomment_template.replace("{{USERNAME}}", username)
-                                        .replace("{{DELETE_COMMENT}}", if user_id == s.user_id || credentials.is_admin == true { &delete_sub_html } else { "" })
+                    subcomment_template.replace("{{DELETE_COMMENT}}", if user_id == s.user_id || credentials.is_admin == true { &delete_sub_html } else { "" })
+                                       .replace("{{AVATAR_COLOR}}", &format!("style=\"background-color: {};\"", common::get_color_from_id(i.user_id)))
+                                       .replace("{{FIRST_LETTER}}", &first_letter)
                                        .replace("{{DATE}}", &s.date.to_string())
+                                       .replace("{{USERNAME}}", username)
                                        .replace("{{BODY}}", &s.body.to_string())
                                        .replace("{{COMMENT_ID}}", &s.id.to_string())
                                        .replace("{{POST_ID}}", &s.post_id.to_string());

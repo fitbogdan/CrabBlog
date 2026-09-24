@@ -252,10 +252,10 @@ pub fn get_post(conn: &Connection, id: u32) -> Option<Post>{
 
 }
 
-pub fn edit_post(conn: &Connection, id: u32, title: &str, body: &str){
+pub fn edit_post(conn: &Connection, post: &Post){
     conn.execute("
-    UPDATE posts SET title = ?1, body = ?2 WHERE id = ?3", 
-    params![title, body, id]
+    UPDATE posts SET title = ?1, body = ?2, image_path = ?3 WHERE id = ?4", 
+    params![post.title, post.body, post.image_path,post.id]
     ).unwrap();
 }
 

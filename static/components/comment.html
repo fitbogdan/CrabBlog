@@ -4,13 +4,15 @@
 {{DELETE_COMMENT}}
 
 <div class="flex items-center gap-3">
-    <div class="w-10 h-10 bg-amber-950 rounded flex items-center justify-center font-display text-ink border-2 border-outline"> Z </div>
+    <div class="w-10 h-10 rounded flex items-center justify-center font-display text-ink border-2 border-outline" {{AVATAR_COLOR}}> {{FIRST_LETTER}} </div>
     <div class="flex flex-col">
         <p class="font-display text-xl leading-relaxed text-ink"> {{USERNAME}} </p>
         <p class="font-base text-xs opacity-45 leading-relaxed text-ink"> {{DATE_POSTED}} </p>
-        <!--  22 Aug, 19:40 - Here since 2022 -->
+        <!-- 22 Aug, 19:40 - Here since 2022 -->
     </div>
 </div>
+
+<!-- {{USER_CARD}} -->
 
 <p class="font-sans text-base leading-relaxed text-ink whitespace-pre-wrap"> {{COMMENT}} </p>
 <details class="mx-3 mt-1 mb-3">
