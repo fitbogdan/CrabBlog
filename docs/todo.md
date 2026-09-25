@@ -33,7 +33,7 @@ Create default image if I sent the post with no image, just add that one.
 
 If post has no photo just display one of those good looking squares with a color and a letter on it or something
 
-
+Beautiful error screens. Plus for rate limiting no redirect, just render on page
 
 
 
