@@ -17,8 +17,14 @@
     <form class="pixel-card flex flex-col gap-3 max-w-md mx-auto p-5 text-center" method="post" action="/register">
         <p class="text-red-700 font-bold">{{ERROR}}</p>
         <input type="text" name="username" class="font-sans text-sm text-ink bg-bg-deep border-2 border-outline p-2 text-left" placeholder="Username">
-        <input type="password" name="password" class="font-sans text-sm text-ink bg-bg-deep border-2 border-outline p-2 text-left" placeholder="A strong password so nobody can guess it">
-        <input type="password" name="password_again" class="font-sans text-sm text-ink bg-bg-deep border-2 border-outline p-2 text-left" placeholder="Ur password again :)">
+        <input id ="pw" type="password" name="password" class="font-sans text-sm text-ink bg-bg-deep border-2 border-outline p-2 text-left" placeholder="A strong password so nobody can guess it">
+        <input id ="pw2" type="password" name="password_again" class="font-sans text-sm text-ink bg-bg-deep border-2 border-outline p-2 text-left" placeholder="Ur password again :)">
+        <button type="button" class="font-display text-md text-ink"
+            onclick="const p = document.getElementById('pw'); p.type = p.type === 'password' ? 'text' : 'password';
+                     const p2 = document.getElementById('pw2'); p2.type = p.type;">
+            Show Password
+        </button>
+
 
         <button type="submit" class="pixel-btn cursor-pointer">Register</button>
     </form>

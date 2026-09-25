@@ -88,8 +88,9 @@ pub fn render_home_page(home_loc: &str, items: Vec<PostCard>, credentials: Crede
 
     for i in 0..items.len(){
         let mut post_html = std::fs::read_to_string(common::POST_CARD).unwrap();
+        let date = DateTime::parse_from_rfc3339(&items[i].date).unwrap().with_timezone(&Utc);
 
-        post_html = post_html.replace("{{POST_DATE}}", &items[i].date);
+        post_html = post_html.replace("{{POST_DATE}}", &common::get_readable_date(date));
         post_html = post_html.replace("{{POST_TITLE}}", &items[i].title);
         post_html = post_html.replace("{{POST_DESCRIPTION}}", &items[i].description);
         post_html = post_html.replace("{{POST_IMAGE_URL}}", &format!("/post/{}/image", &items[i].id));

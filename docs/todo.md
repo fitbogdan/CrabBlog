@@ -16,9 +16,6 @@ Subcomment thread only replaces one color - of the parent comment
 --- Rewrite /post/create to use the new function: get_multipart_parts, instead of just taking the bytes by index ---
 
 
-!! Reading multipart assumes image is the first part, thus if you send a post with no image it results in a bad request because it cannot find the image. !!
-
-
 !! GET form appends ? to edit
 
 
@@ -26,11 +23,7 @@ Devtool to easily change account status, quickly, for testing.
 
 Way later: Migrations — schema changes currently require deleting the database.
 
-Control formatting of usernames and of passwords
-
 Rate limiting on sending comments
-
-Limit \n's on comments
 
 
 

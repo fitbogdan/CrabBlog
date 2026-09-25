@@ -1,4 +1,4 @@
-use std::f32::consts::GOLDEN_RATIO;
+use chrono::{DateTime, Utc};
 
 use crate::datatypes::{PostCard};
 
@@ -12,6 +12,37 @@ pub const DELETE_POST_BUTTON: &str = "static/components/delete_post_button.html"
 pub const DELTE_COMMENT_BUTTON: &str = "static/components/delete_comment.html";
 pub const DELETE_SUBCOMMENT_BUTTON: &str = "static/components/delete_subcomment.html";
 pub const USER_CARD: &str = "static/components/user_card.html";
+
+
+
+
+
+
+pub fn get_readable_date(date: DateTime<Utc>) -> String{
+
+    let secs = (Utc::now()-date).num_seconds();
+
+    if secs < 60{
+        return "just now".to_string();
+    }
+
+    else if secs < 3600{
+        return format!("{} minutes ago", secs/60);
+    }
+    else if secs < 86400{
+        return format!("{} hours ago", secs/3600);
+    }
+    else if secs < 86400*2-1{
+        return "Yesterday".to_string();
+    }
+    else if secs < 86400 * 30{
+        return format!("{} days ago", secs/86400);
+    }
+    else {
+        return date.format("%d %b %Y").to_string();
+    }
+}
+
 
 
 pub fn get_color_from_id(user_id: u32) -> &'static str{
