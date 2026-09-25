@@ -287,7 +287,13 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
         }
 
         ("POST", ["post", post_id, "reply"]) => {
+            
+            if ! handlers::handle_rate_limiting(&mut stream, &attempts, "comment", 180, 2){
 
+                send_response(&mut stream, 429, "text/html", "<h1>Slow mode is on. Only 2 comments every 3 minutes.</h1>", None);
+
+                return
+            }
 
 
 
@@ -298,6 +304,13 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
 
 
         ("POST", ["post", post_id, "reply", parent_id]) =>  {
+
+            if ! handlers::handle_rate_limiting(&mut stream, &attempts, "reply", 180, 3){
+
+                send_response(&mut stream, 429, "text/html", "<h1>Slow mode is on. Only 3 comment replies every 3 minutes.</h1>", None);
+
+                return
+            }
 
             handle_reply(&mut stream, post_id, Some(parent_id), body, user_id, Utc::now(), &db);
         

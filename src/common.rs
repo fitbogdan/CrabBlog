@@ -1,7 +1,5 @@
 use chrono::{DateTime, Utc};
 
-use crate::datatypes::{PostCard};
-
 pub const COMPONENTS_PATH: &str = "static/components/";
 pub const AUTH_COMMENT_BOX: &str = "static/components/auth_comment_box.html";
 pub const GUEST_COMMENT_BOX: &str = "static/components/guest_comment_box.html";
