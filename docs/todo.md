@@ -3,10 +3,6 @@ CLEAN UP HANDLE_CONNECTION, SEND EVERYONE INTO THEIR OWN FILES
 
 
 ## Major features:
-User profiles - Generate color from ID + put their own first letter, and also their join dates
-
-Store emails
-
 Way later: Edit comment (For user and for admin)
 
 Display image on the post page too
@@ -14,6 +10,8 @@ Display image on the post page too
 later: Reply to individual comments.
 
 ## Safety/Bugs:
+
+Subcomment thread only replaces one color - of the parent comment
 
 --- Rewrite /post/create to use the new function: get_multipart_parts, instead of just taking the bytes by index ---
 

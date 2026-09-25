@@ -268,9 +268,73 @@ pub fn handle_register(stream: &mut TcpStream, body: &str, db: &Arc<Mutex<Connec
         return;
     }
 
+    let register_html = std::fs::read_to_string("static/register.html").unwrap();
 
     let username = decode_body_field(body, "username");
     let password = decode_body_field(body, "password");
+    let password2 = decode_body_field(body, "password_again");
+
+
+    if password != password2{
+        let register_html = register_html.replace("{{ERROR}}", "The passwords don't match!");
+
+        send_response(stream, 400, "text/html", &register_html, None);
+
+        return
+    }
+
+    if password.len() < 8{
+        let register_html = register_html.replace("{{ERROR}}", "The password is too short!");
+
+        send_response(stream, 400, "text/html", &register_html, None);
+
+        return
+    }
+
+    if password.len() > 70{
+        let register_html = register_html.replace("{{ERROR}}", "The password is too long!");
+
+        send_response(stream, 400, "text/html", &register_html, None);
+
+        return
+    }
+
+    if password.starts_with(" ") || password.ends_with(" "){
+        let register_html = register_html.replace("{{ERROR}}", "The password cannot start or end with spaces. (Check if you wrote it correctly)");
+
+        send_response(stream, 400, "text/html", &register_html, None);
+
+        return
+    }
+
+    if username.len() > 20{
+        let register_html = register_html.replace("{{ERROR}}", "Your username is too long");
+
+        send_response(stream, 400, "text/html", &register_html, None);
+
+        return
+    }
+    else if username.len() < 3{
+        let register_html = register_html.replace("{{ERROR}}", "Your username is too short");
+
+        send_response(stream, 400, "text/html", &register_html, None);
+
+        return
+    }
+    
+    for c in username.chars(){
+        //If its not an alphanumeric char or a _, bad request
+        if !(c.is_ascii_alphabetic() || c == '_'){
+            let register_html = register_html.replace("{{ERROR}}", "Make sure your username only contains letters, numbers, or \"_\"");
+
+            send_response(stream, 400, "text/html", &register_html, None);
+
+            return
+        }
+    }        
+
+
+
 
     let result =  {
         let conn = get_con(&db);

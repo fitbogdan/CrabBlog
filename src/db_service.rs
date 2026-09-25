@@ -27,7 +27,7 @@ pub fn create_db() -> Connection{
             );
             CREATE TABLE IF NOT EXISTS users(
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT NOT NULL UNIQUE,
+                username TEXT NOT NULL UNIQUE COLLATE NOCASE,
                 password TEXT NOT NULL,
                 date_joined TEXT NOT NULL,
                 is_admin BOOLEAN not NULL DEFAULT FALSE

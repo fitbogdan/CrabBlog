@@ -38,7 +38,7 @@ pub fn render_comments(post_id: u32, db: &Arc<Mutex<Connection>>, credentials: &
     let delete_html = std::fs::read_to_string(common::DELTE_COMMENT_BUTTON).unwrap();
     let delete_sub_html = std::fs::read_to_string(common::DELETE_SUBCOMMENT_BUTTON).unwrap();
 
-    let mut user_card_html_template = std::fs::read_to_string(common::USER_CARD).unwrap();
+    // let user_card_html_template = std::fs::read_to_string(common::USER_CARD).unwrap();
 
 
 
@@ -111,7 +111,7 @@ pub fn render_comments(post_id: u32, db: &Arc<Mutex<Connection>>, credentials: &
 
                 let cur_subcomment = 
                     subcomment_template.replace("{{DELETE_COMMENT}}", if user_id == s.user_id || credentials.is_admin == true { &delete_sub_html } else { "" })
-                                       .replace("{{AVATAR_COLOR}}", &format!("style=\"background-color: {};\"", common::get_color_from_id(i.user_id)))
+                                       .replace("{{AVATAR_COLOR}}", &format!("style=\"background-color: {};\"", common::get_color_from_id(s.user_id)))
                                        .replace("{{FIRST_LETTER}}", &first_letter)
                                        .replace("{{DATE}}", &s.date.to_string())
                                        .replace("{{USERNAME}}", username)
