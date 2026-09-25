@@ -15,6 +15,7 @@ pub struct PostCard{
     pub date: String,
     pub image_url: String,
     pub id: u32,
+    pub comment_count: u32,
 }
 
 impl PostCard{
@@ -22,13 +23,15 @@ impl PostCard{
         description: String, 
         date: String,
         image_url: String, 
-        id: u32) -> PostCard{
+        id: u32,
+        comment_count: u32) -> PostCard{
             PostCard{
                 title,
                 description,
                 date,
                 image_url,
                 id,
+                comment_count
             }
     }
 }

@@ -29,17 +29,7 @@ Rate limiting on sending comments
 
 ## Frontend polish:
 
-Real readable dates
-
-Correct comment count on page + home page
-
 Create default image if I sent the post with no image, just add that one.
-
-Two password fields to make sure they type the correct password
-
-Password peak button
-
-Translate comment time to readable text in the client's timezone if possible
 
 If post has no photo just display one of those good looking squares with a color and a letter on it or something
 

@@ -180,7 +180,10 @@ pub fn get_posts(conn: &Connection) -> Vec<Post>{
 pub fn get_post_cards(conn: &Connection) -> Vec<PostCard>{
 
     let mut stmt = conn.prepare(
-        "SELECT id,title,substr(body, 1, 100),date, image_path FROM posts ORDER BY date DESC"
+        "SELECT id,title,substr(body, 1, 100),date, image_path, 
+            (SELECT COUNT(*) FROM comments WHERE post_id = posts.id)
+        FROM posts 
+        ORDER BY date DESC"
     ).unwrap();
 
     let rows = stmt.query_map([], |row|{
@@ -203,6 +206,7 @@ pub fn get_post_cards(conn: &Connection) -> Vec<PostCard>{
                 description: first_line+"...",
                 date: date_str,
                 image_url: row.get(4).unwrap(),
+                comment_count: row.get(5).unwrap()
             }
         )
     }).unwrap();
