@@ -1,3 +1,5 @@
 /target
 tailwindcss
 blog.db
+*.exe
+*.pdb
