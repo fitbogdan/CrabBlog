@@ -5,7 +5,36 @@ Time: 23:31:30, Runs: 10, Speed (Seconds): 2.0206, Date: 2026-08-30
 Time: 23:32:18, Runs: 10, Speed (Seconds): 1.8505, Date: 2026-08-30
 Time: 23:33:42, Runs: 10, Speed (Seconds): 0.6293, Date: 2026-08-30
 Time: 23:34:18, Runs: 10, Speed (Seconds): 0.6385, Date: 2026-08-30
+With Prints (No db, No Auth)
 Time: 23:34:45, Runs: 10, Speed (Seconds): 2.0338, Date: 2026-08-30
 Time: 23:35:16, Runs: 10, Speed (Seconds): 1.8525, Date: 2026-08-30
+Removed prints:
 Time: 23:35:30, Runs: 10, Speed (Seconds): 0.6411, Date: 2026-08-30
 Time: 23:35:44, Runs: 10, Speed (Seconds): 0.6331, Date: 2026-08-30
+
+
+With Prints to /: (Debug Mode)
+Time: 21:02:10, Runs: 10, Speed (Seconds): 0.8531, Date: 2026-09-27
+Time: 21:05:18, Runs: 10, Speed (Seconds): 0.8348, Date: 2026-09-27
+
+
+Without Prints to /: (Debug Mode)
+Time: 21:05:43, Runs: 10, Speed (Seconds): 0.8171, Date: 2026-09-27
+
+
+Requests sent to /posts/2 (Post with 24 comments and no image) (Debug Mode)
+Time: 21:07:16, Runs: 10, Speed (Seconds): 1.9910, Date: 2026-09-27
+Time: 21:08:22, Runs: 10, Speed (Seconds): 1.9867, Date: 2026-09-27
+
+
+Requests sent to /posts/2 (Post with 24 comments and no image) (Release Mode)
+Time: 21:15:32, Runs: 10, Speed (Seconds): 1.0132, Date: 2026-09-27
+Time: 21:15:55, Runs: 10, Speed (Seconds): 0.9995, Date: 2026-09-27
+Time: 21:16:10, Runs: 10, Speed (Seconds): 0.9951, Date: 2026-09-27
+Time: 21:16:25, Runs: 10, Speed (Seconds): 1.0038, Date: 2026-09-27
+Time: 21:24:21, Runs: 10, Speed (Seconds): 1.4672, Date: 2026-09-27
+Time: 21:24:42, Runs: 10, Speed (Seconds): 1.5105, Date: 2026-09-27
+Time: 21:26:58, Runs: 10, Speed (Seconds): 1.6051, Date: 2026-09-27
+Time: 21:29:32, Runs: 10, Speed (Seconds): 1.3826, Date: 2026-09-27
+Time: 21:34:29, Runs: 10, Speed (Seconds): 1.5489, Date: 2026-09-27
+Time: 21:39:22, Runs: 10, Speed (Seconds): 1.1169, Date: 2026-09-27

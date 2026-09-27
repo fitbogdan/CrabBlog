@@ -3,3 +3,4 @@ tailwindcss
 blog.db
 *.exe
 *.pdb
+perf.data

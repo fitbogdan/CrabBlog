@@ -12,7 +12,7 @@ results=()
 for i in $(seq 1 "$1")
 do
     echo "Tests: $i/$1"
-    result=$(ab -q -n 10000 -c 1000 http://127.0.0.1:8080/ | grep seconds | awk '{print $5}');
+    result=$(ab -q -n 10000 -c 1000 http://127.0.0.1:8080/post/2 | grep seconds | awk '{print $5}');
     results+=("$result")
 done
 

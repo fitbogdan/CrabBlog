@@ -80,7 +80,7 @@ pub fn render_home_page(home_loc: &str, items: Vec<PostCard>, credentials: Crede
 
     let mut final_post_html: String = "".to_string();
 
-    print!("\n\n\n\n{}\n\n\n\n", credentials.is_admin);
+    // print!("\n\n\n\n{}\n\n\n\n", credentials.is_admin);
     let delete_button = match credentials.is_admin{
         true => std::fs::read_to_string(common::DELETE_POST_BUTTON).unwrap(),
         false => "".to_string(),

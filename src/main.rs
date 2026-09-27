@@ -175,9 +175,9 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
 
 
 
-    println!("Got this user: {:?}", user_id);
+    // println!("Got this user: {:?}", user_id);
 
-    println!("Got incoming request:\n{}", request);
+    // println!("Got incoming request:\n{}", request);
 
 
     let mut method: String = "".to_string();
@@ -413,7 +413,7 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
         //A ? at the end with no params because I send no params
         ("GET", ["post", post_id, "edit?"]) => {
 
-            print!("GOT INTO EDIT !!!!!!!!!!!!!!!!!!!!!!!! \n\n\n\\n\n\n\n\n");
+            // print!("GOT INTO EDIT !!!!!!!!!!!!!!!!!!!!!!!! \n\n\n\\n\n\n\n\n");
 
             let post_id = match post_id.parse::<u32>(){
                 Ok(id) => id,
@@ -475,7 +475,7 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
                 //Else, get keep path from last post
                 let image_bytes = payload.iter().find(|&x| x.0 == "image").map(|x| x.1);
 
-                println!("Image bytes: {:?}", image_bytes);
+                // println!("Image bytes: {:?}", image_bytes);
 
                 let old_post = {
                     let conn = get_con(&db);
