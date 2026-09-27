@@ -2,7 +2,8 @@ use std::collections::HashMap;
 // use std::hash::Hash;
 use std::net::{TcpListener, TcpStream};
 use std::io::{Read};
-use std::sync::{Arc, Mutex};
+use std::sync::mpsc::Receiver;
+use std::sync::{Arc, Mutex, mpsc};
 use std::thread;
 use std::time::{Duration, Instant};
 pub mod post;
@@ -141,7 +142,7 @@ pub fn read_request_bytes(stream: &mut TcpStream, content_kind: &mut ContentType
     Some(data) 
 }
 
-pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, attempts: Attempts){
+pub fn handle_connection(mut stream: TcpStream, db: &Arc<Mutex<Connection>>, attempts: &Attempts){
     let mut content_type: ContentType = ContentType::Form;
     let request_bytes = match read_request_bytes(&mut stream, &mut content_type){
         Some(r) => r,
@@ -607,31 +608,62 @@ pub fn handle_connection(mut stream: TcpStream, db: Arc<Mutex<Connection>>, atte
     }
 }
 
+pub fn worker(db: Arc<Mutex<Connection>>, attempts: Attempts, rx: Arc<Mutex<Receiver<TcpStream>>>){
+    loop{
+
+        let stream = {
+            let rx = rx.lock().unwrap();
+            rx.recv().unwrap()
+        };
+
+        handle_connection(stream, &db, &attempts);
+
+    }
+}
+
 pub fn run_server(){
     let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
 
     println!("Listening on http://127.0.0.1:8080");
 
-    let concurrency = true;
     let conn = db_service::create_db();
     let db = Arc::new(Mutex::new(conn));
     let attempts: Arc<Mutex<HashMap<String, Vec<Instant>>>> = Arc::new(Mutex::new(HashMap::new()));
+
+    let (tx, rx) = mpsc::channel::<TcpStream>();
+
+    let rx = Arc::new(Mutex::new(rx));
+
+    for _ in 0..16{
+        let db = Arc::clone(&db);
+        let attempts = Arc::clone(&attempts);
+        let rx = Arc::clone(&rx);
+        thread::spawn(move ||{
+            worker(db, attempts, rx);
+        });
+    }
+
+
 
     for stream in listener.incoming(){
 
         match stream {
             Ok(stream) => {
                 stream.set_read_timeout(Some(Duration::from_secs(10))).unwrap();
-                if concurrency == true {
-                    let db = Arc::clone(&db);
-                    let attempts = Arc::clone(&attempts);
-                    thread::spawn(move ||{
-                        handle_connection(stream,db,attempts);
-                    });
-                }
-                else{
-                    handle_connection(stream,Arc::clone(&db), Arc::clone(&attempts));
-                }
+
+                tx.send(stream).unwrap(); //Send work into the channel queue
+
+
+                // if concurrency == true {
+                //     let db = Arc::clone(&db);
+                //     let attempts = Arc::clone(&attempts);
+                //     thread::spawn(move ||{
+                //         handle_connection(stream,db,attempts);
+                //     });
+                // }
+                // else{
+                //     handle_connection(stream,Arc::clone(&db), Arc::clone(&attempts));
+                // }
             },
             Err(e) => eprintln!("Connection failed! {}", e)
         }
