@@ -86,6 +86,8 @@ pub fn render_home_page(home_loc: &str, items: Vec<PostCard>, credentials: Crede
         false => "".to_string(),
     };
 
+    
+
     for i in 0..items.len(){
         let mut post_html = std::fs::read_to_string(common::POST_CARD).unwrap();
         let date = DateTime::parse_from_rfc3339(&items[i].date).unwrap().with_timezone(&Utc);
@@ -382,27 +384,69 @@ pub fn get_image_extension(image_bytes: &[u8]) -> Option<String>{
 }
 
 pub fn process_multipart_post(stream: &mut TcpStream, body: &[u8], boundary: &str, db: &Arc<Mutex<Connection>>){
-    let image_bytes = match http::get_multipart_part_bytes(boundary, body, 0){
-        Some(b) => b,
-        None => return,
-    };
 
-    let headline = match http::get_multipart_part_bytes(boundary, body, 1){
-        Some(s) => String::from_utf8_lossy(&s).into_owned(),
+    // let image_bytes = match http::get_multipart_part_bytes(boundary, body, 0){
+    //     Some(b) => b,
+    //     None => return,
+    // };
+
+    // let headline = match http::get_multipart_part_bytes(boundary, body, 1){
+    //     Some(s) => String::from_utf8_lossy(&s).into_owned(),
+    //     None => return
+    // };
+
+    // let post_body = match http::get_multipart_part_bytes(boundary, body, 2){
+    //     Some(s) => String::from_utf8_lossy(&s).into_owned(),
+    //     None => return
+    // };
+
+    let payload = http::get_multipart_parts(boundary, body);
+
+
+    let image_bytes = payload.iter().find(|&x| x.0 == "image").map(|x| x.1);
+
+    let image_bytes = match image_bytes{
+        Some(ib) => ib,
         None => return
     };
 
-    let post_body = match http::get_multipart_part_bytes(boundary, body, 2){
-        Some(s) => String::from_utf8_lossy(&s).into_owned(),
-        None => return
+    let headline = payload.iter().find(|&x| x.0 == "title").map(|x| x.1);
+    let headline = match headline{
+        Some(h) => String::from_utf8_lossy(h).into_owned(),
+        None => {
+            send_response(stream, 400, "text/html", "<h1>You need to add a headline</h1>", None);
+            return
+        }
     };
+
+    let body = payload.iter().find(|&x| x.0 == "body").map(|x| x.1);
+    let post_body = match body{
+        Some(b) => String::from_utf8_lossy(b).into_owned(),
+        None => {
+            send_response(stream, 400, "text/html", "<h1>You must add a post body</h1>", None);
+            return
+        }
+    };
+
+
 
     let token = generate_token();
+
     let ext = get_image_extension(&image_bytes);
+
+
+    println!("{:?}, {}",&image_bytes, image_bytes.len());
     if let Some(ext) = ext{
 
+
         let filename = format!("{}.{}",token,ext);
-        let path = format!("static/images/{}", filename);
+        let mut path = format!("static/images/{}", filename);
+
+        if image_bytes.len() == 0{
+            path = "static/images/post_def.png".to_string();
+        }
+
+
         std::fs::write(&path, image_bytes).unwrap();
 
 
@@ -415,10 +459,19 @@ pub fn process_multipart_post(stream: &mut TcpStream, body: &[u8], boundary: &st
         send_response(stream, 302, "text/html", "", Some("Location: /"));
     }
     else{
-        send_response(stream, 400, "text/html", "Not an image", None);
+        send_response(stream, 400, "text/html", "This extension is not supported", None);
         return;
     }
 
+    // else{
+    //     let path = "static/images/post_def.png".to_string();
 
+    //     let post = datatypes::Post { id: 0, title: headline, body: post_body, date: Utc::now(), image_path: Some(path)};
+    //     {
+    //         let conn = &get_con(&db);
+    //         db_service::send_post(&conn, &post);
+    //     }
 
+    //     send_response(stream, 302, "text/html", "", Some("Location: /"));
+    // }
 }

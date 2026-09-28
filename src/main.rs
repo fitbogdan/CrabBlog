@@ -178,7 +178,7 @@ pub fn handle_connection(mut stream: TcpStream, db: &Arc<Mutex<Connection>>, att
 
     // println!("Got this user: {:?}", user_id);
 
-    // println!("Got incoming request:\n{}", request);
+    println!("Got incoming request:\n{}", request);
 
 
     let mut method: String = "".to_string();
@@ -333,83 +333,7 @@ pub fn handle_connection(mut stream: TcpStream, db: &Arc<Mutex<Connection>>, att
             }
         },
 
-        ("POST", ["post", post_id, "delete"]) => {
 
-
-            if credentials.is_admin == false{
-                send_response(&mut stream, 401, "text/html", "You are not allowed to do that", None);
-                return;
-            }
-
-
-            let post_id_fin = match post_id.parse::<u32>(){
-                    Ok(n) => n,
-                    Err(_) => {
-                        send_response(&mut stream, 400, "text/html", "Error, post_id wrong", None);
-                        return;
-                    }
-            };
-            {
-
-                let conn = get_con(&db);
-                db_service::delete_post(&conn, post_id_fin);
-
-            }
-
-
-            send_response(&mut stream, 302, "text/html", "", Some("Location: /"));
-        }
-        
-        ("POST", ["login"]) => {
-            handle_login(&mut stream, body, &db, cookie_duration, &attempts);
-        },
-        ("POST", ["register"]) => {
-            handle_register(&mut stream, body, &db, cookie_duration, &attempts);            
-        },
-
-        ("GET", ["login"]) => {
-            // Render login page
-            let mut login_html = std::fs::read_to_string("static/login.html").unwrap();
-            login_html = login_html.replace("{{ERROR}}", "");
-            send_response(&mut stream, 200, "text/html", &login_html, None);
-
-        },
-
-        ("GET", ["register"]) => {
-            let mut register_html = std::fs::read_to_string("static/register.html").unwrap();
-            register_html = register_html.replace("{{ERROR}}", "");
-            send_response(&mut stream, 200, "text/html", &register_html, None);
-
-        },
-
-        ("POST", ["logout"]) => {
-            let conn = get_con(&db);
-            if let Some(t) = token{
-                db_service::logout_user(&conn, &t);
-            }
-            send_response(&mut stream, 302, "text/html", "", 
-                Some("Set-Cookie: token=; Max-Age=0; Path=/; HttpOnly\r\nLocation: /")
-            );
-        },
-
-        ("GET", ["write"]) => {
-
-            if credentials.is_admin == false{
-                send_response(&mut stream, 401, "text/html", "You are not allowed to do that", None);
-                return;
-            }
-
-            let html = std::fs::read_to_string("static/create_post.html").unwrap();
-
-            let final_write_html = html.replace("{{PAGE_HEADING}}", "Write a new post!")
-                                        .replace("{{TITLE}}", "")
-                                        .replace("{{BODY}}", "")
-                                        .replace("{{ACTION}}", "/post/create");
-            
-
-            send_response(&mut stream, 200, "text/html", &final_write_html, None);
-
-        },
         //Add ? at the end because thats how the browser GET form sends it
         //A ? at the end with no params because I send no params
         ("GET", ["post", post_id, "edit?"]) => {
@@ -453,6 +377,8 @@ pub fn handle_connection(mut stream: TcpStream, db: &Arc<Mutex<Connection>>, att
 
             send_response(&mut stream, 200, "text/html", &final_edit_html, None);
         },
+
+         
         ("POST", ["post", post_id, "edit"]) => {
 
             if credentials.is_admin == false{
@@ -558,6 +484,84 @@ pub fn handle_connection(mut stream: TcpStream, db: &Arc<Mutex<Connection>>, att
             }
         }
 
+        ("POST", ["post", post_id, "delete"]) => {
+
+
+            if credentials.is_admin == false{
+                send_response(&mut stream, 401, "text/html", "You are not allowed to do that", None);
+                return;
+            }
+
+
+            let post_id_fin = match post_id.parse::<u32>(){
+                    Ok(n) => n,
+                    Err(_) => {
+                        send_response(&mut stream, 400, "text/html", "Error, post_id wrong", None);
+                        return;
+                    }
+            };
+            {
+
+                let conn = get_con(&db);
+                db_service::delete_post(&conn, post_id_fin);
+
+            }
+
+
+            send_response(&mut stream, 302, "text/html", "", Some("Location: /"));
+        }
+        
+        ("POST", ["login"]) => {
+            handle_login(&mut stream, body, &db, cookie_duration, &attempts);
+        },
+        ("POST", ["register"]) => {
+            handle_register(&mut stream, body, &db, cookie_duration, &attempts);            
+        },
+
+        ("GET", ["login"]) => {
+            // Render login page
+            let mut login_html = std::fs::read_to_string("static/login.html").unwrap();
+            login_html = login_html.replace("{{ERROR}}", "");
+            send_response(&mut stream, 200, "text/html", &login_html, None);
+
+        },
+
+        ("GET", ["register"]) => {
+            let mut register_html = std::fs::read_to_string("static/register.html").unwrap();
+            register_html = register_html.replace("{{ERROR}}", "");
+            send_response(&mut stream, 200, "text/html", &register_html, None);
+
+        },
+
+        ("POST", ["logout"]) => {
+            let conn = get_con(&db);
+            if let Some(t) = token{
+                db_service::logout_user(&conn, &t);
+            }
+            send_response(&mut stream, 302, "text/html", "", 
+                Some("Set-Cookie: token=; Max-Age=0; Path=/; HttpOnly\r\nLocation: /")
+            );
+        },
+
+        ("GET", ["write"]) => {
+
+            if credentials.is_admin == false{
+                send_response(&mut stream, 401, "text/html", "You are not allowed to do that", None);
+                return;
+            }
+
+            let html = std::fs::read_to_string("static/create_post.html").unwrap();
+
+            let final_write_html = html.replace("{{PAGE_HEADING}}", "Write a new post!")
+                                        .replace("{{TITLE}}", "")
+                                        .replace("{{BODY}}", "")
+                                        .replace("{{ACTION}}", "/post/create");
+            
+
+            send_response(&mut stream, 200, "text/html", &final_write_html, None);
+
+        },
+
 
         ("POST", ["upload"]) => {
 
@@ -634,7 +638,7 @@ pub fn run_server(){
 
     let rx = Arc::new(Mutex::new(rx));
 
-    for _ in 0..16{
+    for _ in 0..2{
         let db = Arc::clone(&db);
         let attempts = Arc::clone(&attempts);
         let rx = Arc::clone(&rx);
