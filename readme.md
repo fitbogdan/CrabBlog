@@ -67,7 +67,7 @@ Debug builds skip optimisations and also distort *where* time is spent, so all c
 
 ### Profiling
  
-![Flamegraph before the thread pool](assets/flamegraph_27_09.svg)
+![Flamegraph before the thread pool](/docs/assets/flamegraph_27_09.svg)
  
 Profiled with `cargo flamegraph` (perf, frame pointers enabled). The widest stacks were thread creation:
 
