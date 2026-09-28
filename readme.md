@@ -117,5 +117,17 @@ This is because the server simply doesn't need so many threads, so it gets slowe
  
 **My Hypothesis:** every worker shares one SQLite connection behind a `Mutex`, so part of every request can only run on one thread at a time.
 
+- With one worker, querying and rendering happen one after the other.
+- With **two**, one worker can query while the other renders and writes its response, so the lock is kept busy with little waiting.
+- With more than that, it seems like the threads wait too much for the connection to free up, add the kernel overhead on top of that and you get increasingly slower.
+
+**To confirm:** I can run the same worker sweep against a route that never touches the database (e.g. `/style.css`), and measure the time spent waiting to acquire the database lock. If the database-free route keeps scaling with more workers, the lock is the ceiling.
+ 
+**About the flamegraph:** it only records time spent running on CPU. A thread waiting on a lock isn't running, so it produces no samples. That's probably why the profile predicted a bigger win than the pool delivered.
+
+![Flamegraph after the thread pool](/docs/assets/post_thread_pool_27.09.2026.svg)
+
+
+
 
 
