@@ -37,6 +37,10 @@ Replacing thread-per-connection with a thread pool gave **~42% more throughput**
 
 The best worker count on this machine turned out to be **2, not 24** — see [Why two workers is fastest](#why-two-workers-is-fastest).
 
+At least while running Apache Bench (ab command in Linux)
+
+I will have to investigate more with using a multi threaded testing tool like wrk.
+
 
 ## Setup
 - **Machine:** 12 Core, 24-thread CPU, AMD Ryzen 9 3900X
@@ -126,6 +130,14 @@ This is because the server simply doesn't need so many threads, so it gets slowe
 **About the flamegraph:** it only records time spent running on CPU. A thread waiting on a lock isn't running, so it produces no samples. That's probably why the profile predicted a bigger win than the pool delivered.
 
 ![Flamegraph after the thread pool](/docs/assets/post_thread_pool_27.09.2026.svg)
+
+
+## Next steps
+- Confirm the lock hypothesis, and implement a pool for the locks.
+- Test with a multi threaded testing tool
+- Re-measure after each change, in release mode
+- Deploy the blog and stop obsessing over performance haha :))
+
 
 
 
