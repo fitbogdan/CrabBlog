@@ -1,3 +1,14 @@
+MASSIVE:
+Implement a deadline to the read_bytes function, to limit the use slow loris on my server.
+
+After 10 seconds if the request didn't complete, return.
+
+The real long term fix is switching to async though.
+
+
+
+
+
 HOUSEKEEPING: 
 CLEAN UP HANDLE_CONNECTION, SEND EVERYONE INTO THEIR OWN FILES
 
