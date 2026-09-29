@@ -4,7 +4,7 @@ use std::net::{TcpListener, TcpStream};
 use std::io::{Read};
 use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex, mpsc};
-use std::thread;
+use std::{panic, thread};
 use std::time::{Duration, Instant};
 pub mod post;
 pub mod datatypes;
@@ -619,8 +619,13 @@ pub fn worker(db: Arc<Mutex<Connection>>, attempts: Attempts, rx: Arc<Mutex<Rece
             let rx = rx.lock().unwrap();
             rx.recv().unwrap()
         };
+        let result = panic::catch_unwind(||{
+            handle_connection(stream, &db, &attempts);
+        });
 
-        handle_connection(stream, &db, &attempts);
+        if result.is_err(){
+            println!("Got an error: \n\n{:?}\n\nError end", result);
+        }
 
     }
 }
