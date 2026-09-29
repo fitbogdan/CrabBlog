@@ -643,7 +643,7 @@ pub fn run_server(){
 
     let rx = Arc::new(Mutex::new(rx));
 
-    for _ in 0..2{
+    for _ in 0..10{
         let db = Arc::clone(&db);
         let attempts = Arc::clone(&attempts);
         let rx = Arc::clone(&rx);
@@ -658,7 +658,7 @@ pub fn run_server(){
 
         match stream {
             Ok(stream) => {
-                stream.set_read_timeout(Some(Duration::from_secs(10))).unwrap();
+                stream.set_read_timeout(Some(Duration::from_secs(3))).unwrap();
 
                 tx.send(stream).unwrap(); //Send work into the channel queue
 
